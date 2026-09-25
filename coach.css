@@ -1,0 +1,116 @@
+/* Coach feedback overlay and diff highlighting. Loaded via coach.js injection. */
+.coach-feedback {
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--bg-3);
+  border: 1px solid var(--hairline);
+  margin: 12px 16px;
+  text-align: left;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  animation: fadeUp 0.3s var(--ease);
+}
+.coach-feedback .coach-word {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.coach-feedback .coach-word strong {
+  color: var(--primary-2);
+  letter-spacing: 0.03em;
+}
+.coach-feedback .coach-diff {
+  font-size: 0.92rem;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--slot-bg);
+  font-weight: 600;
+  word-break: break-all;
+}
+.coach-feedback .coach-match {
+  color: var(--ink);
+}
+.coach-feedback .coach-wrong {
+  color: var(--bad);
+  text-decoration: line-through;
+  margin-right: 1px;
+}
+.coach-feedback .coach-correct-char {
+  color: var(--good);
+  font-weight: 800;
+  margin-right: 1px;
+}
+.coach-feedback .coach-missing {
+  color: var(--good);
+  border-bottom: 2px dashed var(--good);
+  font-weight: 800;
+}
+.coach-feedback .coach-extra {
+  color: var(--bad);
+  text-decoration: line-through;
+}
+.coach-feedback .coach-tip {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* Coach level indicator on home */
+.coach-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-2);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(36, 107, 90, 0.1);
+  border: 1px solid rgba(36, 107, 90, 0.2);
+}
+
+/* Coach progress stats section */
+.coach-stats {
+  width: 100%;
+  margin: 8px 0 20px;
+  text-align: left;
+}
+.coach-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--hairline);
+}
+.coach-stat-row:last-child { border-bottom: none; }
+.coach-stat-label { color: var(--ink-soft); }
+.coach-stat-value {
+  font-weight: 700;
+  color: var(--primary-2);
+  font-variant-numeric: tabular-nums;
+}
+.coach-stat-row.empty .coach-stat-value { color: var(--ink-soft); }
+
+/* Coach empty state */
+.coach-empty-state {
+  text-align: center;
+  padding: 28px 20px;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.coach-empty-state .btn { margin-top: 14px; width: auto; display: inline-flex; }
+
+/* Coach assessment prompt on home */
+.coach-assessment-card {
+  width: 100%;
+  padding: 18px;
+  margin-bottom: 16px;
+  border: 2px dashed var(--primary-2);
+  border-radius: var(--radius);
+  background: rgba(36, 107, 90, 0.05);
+  text-align: center;
+}
+.coach-assessment-card .btn { margin-top: 14px; }

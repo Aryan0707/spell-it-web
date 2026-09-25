@@ -1,0 +1,1837 @@
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "spellit_v1";
+
+  const el = (id) => document.getElementById(id);
+
+  const screens = {
+    home: el("screen-home"),
+    game: el("screen-game"),
+    settings: el("screen-settings"),
+    history: el("screen-history"),
+    summary: el("screen-summary"),
+    lists: el("screen-lists"),
+    notebook: el("screen-notebook"),
+    sync: el("screen-sync"),
+  };
+
+  const ui = {
+    statBest: el("stat-best"),
+    statCorrect: el("stat-correct"),
+    statDue: el("stat-due"),
+    btnStart: el("btn-start"),
+    btnReset: el("btn-reset"),
+    btnQuit: el("btn-quit"),
+    curStreak: el("cur-streak"),
+    progressFill: el("progress-fill"),
+    speakBtn: el("btn-speak"),
+    hintText: el("hint-text"),
+    answerRow: el("answer-row"),
+    rack: el("rack"),
+    btnClear: el("btn-clear"),
+    btnSkip: el("btn-skip"),
+    feedbackBanner: el("feedback-banner"),
+    tutorPanel: el("tutor-panel"),
+    tutorText: el("tutor-text"),
+    loadingOverlay: el("loading-overlay"),
+    loadingText: el("loading-text"),
+    btnSettings: el("btn-settings"),
+    btnSettingsBack: el("btn-settings-back"),
+    inputToggleAI: el("input-toggle-ai"),
+    inputApiKey: el("input-api-key"),
+    inputModel: el("input-model"),
+    settingsStatus: el("settings-status"),
+    btnTestAI: el("btn-test-ai"),
+    btnSaveAI: el("btn-save-ai"),
+    inputVoice: el("input-voice"),
+    btnTestVoice: el("btn-test-voice"),
+    modeListenBtn: el("mode-listen"),
+    modeReadBtn: el("mode-read"),
+    difficultyChips: el("difficulty-chips"),
+    categoryChips: el("category-chips"),
+    lengthChips: el("length-chips"),
+    inputModeChips: el("input-mode-chips"),
+    ruleTip: el("rule-tip"),
+    ruleTipText: el("rule-tip-text"),
+    studyRuleTip: el("study-rule-tip"),
+    studyRuleTipText: el("study-rule-tip-text"),
+    typedInputRow: el("typed-input-row"),
+    typedInput: el("typed-input"),
+    btnTypedCheck: el("btn-typed-check"),
+    choiceRow: el("choice-row"),
+    timedChips: el("timed-chips"),
+    spellingStyleChips: el("spelling-style-chips"),
+    timerPill: el("timer-pill"),
+    timerSeconds: el("timer-seconds"),
+    studyOverlay: el("study-overlay"),
+    studyWord: el("study-word"),
+    studyHint: el("study-hint"),
+    btnStudyReady: el("btn-study-ready"),
+    inputToggleElevenlabs: el("input-toggle-elevenlabs"),
+    inputElevenlabsKey: el("input-elevenlabs-key"),
+    inputElevenlabsVoice: el("input-elevenlabs-voice"),
+    btnLoadElevenlabsVoices: el("btn-load-elevenlabs-voices"),
+    elevenlabsStatus: el("elevenlabs-status"),
+    btnTestElevenlabs: el("btn-test-elevenlabs"),
+    inputToggleSound: el("input-toggle-sound"),
+    inputToggleHaptic: el("input-toggle-haptic"),
+    inputToggleTheme: el("input-toggle-theme"),
+    btnHistory: el("btn-history"),
+    btnHistoryBack: el("btn-history-back"),
+    histBest: el("hist-best"),
+    histMastered: el("hist-mastered"),
+    histSessions: el("hist-sessions"),
+    historyDueList: el("history-due-list"),
+    historyMasteredList: el("history-mastered-list"),
+    historyPatternsList: el("history-patterns-list"),
+    summaryTitle: el("summary-title"),
+    summarySubtitle: el("summary-subtitle"),
+    summaryCorrect: el("summary-correct"),
+    summaryStreak: el("summary-streak"),
+    summaryMastered: el("summary-mastered"),
+    summaryMasteredSection: el("summary-mastered-section"),
+    summaryMasteredList: el("summary-mastered-list"),
+    summaryReviewSection: el("summary-review-section"),
+    summaryReviewList: el("summary-review-list"),
+    btnPracticeAgain: el("btn-practice-again"),
+    btnSummaryDone: el("btn-summary-done"),
+    btnReviewDue: el("btn-review-due"),
+    btnHistoryReview: el("btn-history-review"),
+    btnRetryMissed: el("btn-retry-missed"),
+    sessionPosition: el("session-position"),
+    roundResult: el("round-result"),
+    roundResultText: el("round-result-text"),
+    btnNextWord: el("btn-next-word"),
+  };
+
+  // ---------- persistence ----------
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed.srs) parsed.srs = {};
+        if (!parsed.patternMistakes) parsed.patternMistakes = {};
+        return parsed;
+      }
+    } catch (e) {}
+    return { bestStreak: 0, curStreak: 0, learned: [], missed: {}, srs: {}, sessionsCompleted: 0, patternMistakes: {} };
+  }
+
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    window.dispatchEvent(new Event("spellit-change"));
+  }
+
+  let data = loadData();
+  if (typeof data.sessionsCompleted !== "number") data.sessionsCompleted = 0;
+
+  function updateHomeStats() {
+    ui.statBest.textContent = data.bestStreak;
+    ui.statCorrect.textContent = countMastered();
+    ui.statDue.textContent = countDueToday();
+    const due = getDueEntries().length;
+    ui.btnReviewDue.classList.toggle("hidden", !due);
+    ui.btnReviewDue.textContent = `Review ${due} due ${due === 1 ? "word" : "words"} →`;
+  }
+
+  // ---------- coach progress display ----------
+  function renderCoachProgress() {
+    const stats = window.SpellCoach.getStats(data, data.srs);
+    const el = document.getElementById("coach-stats-section");
+    if (!el) return;
+    const level = window.SpellCoach.getLevel();
+    const levelName = window.SpellCoach.getLevelName();
+
+    let html = `<div class="coach-stats">`;
+
+    // Level indicator
+    html += `<div class="coach-stat-row">
+      <span class="coach-stat-label">Your level</span>
+      <span class="coach-level-badge">${levelName} (L${level})</span>
+    </div>`;
+
+    if (stats.isAssessed) {
+      if (stats.firstTryAccuracy !== null) {
+        html += `<div class="coach-stat-row">
+          <span class="coach-stat-label">First-try accuracy</span>
+          <span class="coach-stat-value">${stats.firstTryAccuracy}%</span>
+        </div>`;
+      }
+      if (stats.recalledLater > 0) {
+        html += `<div class="coach-stat-row">
+          <span class="coach-stat-label">Words recalled on later days</span>
+          <span class="coach-stat-value">${stats.recalledLater}</span>
+        </div>`;
+      }
+      if (stats.mastered > 0) {
+        html += `<div class="coach-stat-row">
+          <span class="coach-stat-label">Words mastered</span>
+          <span class="coach-stat-value">${stats.mastered}</span>
+        </div>`;
+      }
+      if (stats.masteredToday > 0) {
+        html += `<div class="coach-stat-row">
+          <span class="coach-stat-label">Mastered today</span>
+          <span class="coach-stat-value">${stats.masteredToday}</span>
+        </div>`;
+      }
+    }
+
+    if (stats.totalPracticed === 0) {
+      html += `<div class="coach-empty-state">
+        <p>No words practised yet. Start a practice session to begin your learning journey.</p>
+      </div>`;
+    }
+
+    html += `</div>`;
+    el.innerHTML = html;
+  }
+
+  // ---------- coach assessment ----------
+  function startAssessment() {
+    if (!window.SpellCoach) return;
+    const words = window.SpellCoach.assessmentWords(WORD_LIST, applyVariant);
+    if (!words.length) return;
+    const assessmentSession = {
+      id: crypto.randomUUID(),
+      index: 0,
+      active: true,
+      aiWords: null,
+      aiIndex: 0,
+      correctCount: 0,
+      independentCount: 0,
+      assistedCount: 0,
+      totalCount: 0,
+      bestStreakThisSession: 0,
+      masteredThisSession: [],
+      missedWordsThisSession: new Set(),
+      reviewWords: words,
+      length: words.length,
+      seenWords: new Set(),
+      kind: "assessment",
+      title: "Level assessment",
+      date: null,
+      answerMode: "type",       // force typed input — tiles supply letters, choice gives answers
+      forceListen: true,        // assessment must use listen mode, never read (which reveals answer)
+      assessmentResults: {},
+    };
+    data.curStreak = 0;
+    saveData();
+    ui.curStreak.textContent = 0;
+    hideTutor();
+    hideRoundTimer();
+    updateInputModeVisibility();
+    if (window.SpellSFX) SpellSFX.unlock();
+    showScreen("game");
+    session = assessmentSession;
+    startRound();
+  }
+
+  // ---------- spaced repetition (lightweight SRS) ----------
+  const MASTERY_REPS = 3; // clean reviews in a row (no error) before a word counts as "mastered"
+
+  function countDueToday() {
+    const now = Date.now();
+    return Object.values(data.srs).filter((rec) => rec.dueAt <= now).length;
+  }
+
+  function countMastered() {
+    return Object.values(data.srs).filter((rec) => rec.reps >= MASTERY_REPS).length;
+  }
+
+  function srsWeight(word) {
+    const rec = data.srs[word];
+    if (!rec) return 1; // never scheduled yet — treat as normal priority
+    const now = Date.now();
+    if (rec.dueAt <= now) {
+      const overdueDays = (now - rec.dueAt) / 86400000;
+      return 4 + Math.min(overdueDays, 10); // due (and increasingly overdue) words surface more
+    }
+    return 0.2; // reviewed recently, not due yet — still possible, just deprioritized
+  }
+
+  const DEFAULT_EASE = 2.5;
+
+  function updateSrsOnResult(word, wasClean) {
+    const rec = data.srs[word] || { reps: 0, interval: 0, ease: DEFAULT_EASE };
+    if (rec.ease === undefined) rec.ease = DEFAULT_EASE;
+    if (wasClean) {
+      // Same-day mastery protection: only increment reps if last increment was
+      // on a different calendar day.
+      const shouldIncrement = window.SpellCoach
+        ? window.SpellCoach.canIncrementMastery(word, rec)
+        : true;
+      if (shouldIncrement) {
+        rec.reps += 1;
+      }
+      const nextInterval =
+        rec.reps === 1 ? 1 : rec.reps === 2 ? 3 : Math.min(90, Math.round((rec.interval || 1) * rec.ease));
+      rec.interval = nextInterval;
+      rec.ease = Math.min(3.2, rec.ease + 0.05); // consistently clean reviews slowly widen future gaps
+      rec.dueAt = Date.now() + nextInterval * 86400000;
+    } else {
+      rec.reps = 0;
+      rec.interval = 0;
+      rec.ease = Math.max(1.3, rec.ease - 0.2); // mistakes make the word "stickier" — grows back slower next time
+      rec.dueAt = Date.now();
+    }
+    // Strip internal planning metadata before persisting.
+    const { _source, ...cleanEntry } = round.entry;
+    rec.entry = cleanEntry;
+    rec.updatedAt = Date.now();
+    if (round.assisted) rec.assistedReviews = (rec.assistedReviews || 0) + 1;
+    data.srs[word] = rec;
+    saveData();
+  }
+
+  // ---------- weak spelling patterns ----------
+  function trackPatternMistake(entry) {
+    if (!entry || !entry.rule) return;
+    if (!data.patternMistakes) data.patternMistakes = {};
+    data.patternMistakes[entry.rule] = (data.patternMistakes[entry.rule] || 0) + 1;
+    saveData();
+  }
+
+  function topWeakPatterns(limit) {
+    return Object.entries(data.patternMistakes || {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([rule, count]) => ({ rule, label: RULE_LABELS[rule] || rule, count }));
+  }
+
+  // ---------- speech ----------
+  const VOICE_KEY = "spellit_voice";
+  let speechRequestId = 0;
+  // Names of "novelty" system voices (macOS) that read as robotic/unsettling for a learning app.
+  const NOVELTY_VOICES = new Set([
+    "Bad News", "Bahh", "Bells", "Boing", "Bubbles", "Cellos", "Good News",
+    "Jester", "Organ", "Superstar", "Trinoids", "Whisper", "Wobble", "Zarvox",
+    "Albert", "Fred", "Ralph", "Kathy", "Junior", "Hysterical", "Deranged",
+  ]);
+  const PREFERRED_VOICE_NAMES = [
+    "Samantha", "Ava", "Alex", "Nicky", "Allison", "Susan", "Zoe",
+    "Karen", "Daniel", "Moira", "Tessa",
+    "Google US English", "Google UK English Female",
+    "Microsoft Aria Online (Natural) - English (United States)",
+    "Microsoft Jenny Online (Natural) - English (United States)",
+  ];
+
+  function getEnglishVoices() {
+    if (!("speechSynthesis" in window)) return [];
+    return window.speechSynthesis.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
+  }
+
+  function pickBestVoice() {
+    const voices = getEnglishVoices();
+    if (!voices.length) return null;
+
+    const savedName = localStorage.getItem(VOICE_KEY);
+    if (savedName) {
+      const saved = voices.find((v) => v.name === savedName);
+      if (saved) return saved;
+    }
+    for (const name of PREFERRED_VOICE_NAMES) {
+      const match = voices.find((v) => v.name === name);
+      if (match) return match;
+    }
+    const nonNovelty = voices.filter((v) => !NOVELTY_VOICES.has(v.name));
+    return nonNovelty[0] || voices[0];
+  }
+
+  function speakDevice(text) {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    const voice = pickBestVoice();
+    if (voice) {
+      utter.voice = voice;
+      utter.lang = voice.lang;
+    } else {
+      utter.lang = "en-US";
+    }
+    utter.rate = 0.95;
+    utter.pitch = 1.0;
+    ui.speakBtn.classList.add("speaking");
+    utter.onend = () => ui.speakBtn.classList.remove("speaking");
+    utter.onerror = () => ui.speakBtn.classList.remove("speaking");
+    window.speechSynthesis.speak(utter);
+  }
+
+  function speak(text) {
+    const requestId = ++speechRequestId;
+    if (window.SpellTTS && SpellTTS.isEnabled()) {
+      ui.speakBtn.classList.add("speaking");
+      SpellTTS.speak(text)
+        .then(() => { if (requestId === speechRequestId) ui.speakBtn.classList.remove("speaking"); })
+        .catch((err) => {
+          if (requestId !== speechRequestId) return;
+          console.warn("ElevenLabs speech failed, falling back to device voice:", err);
+          ui.speakBtn.classList.remove("speaking");
+          speakDevice(text);
+        });
+    } else {
+      speakDevice(text);
+    }
+  }
+
+  function populateVoiceSelect() {
+    const voices = getEnglishVoices();
+    const nonNovelty = voices.filter((v) => !NOVELTY_VOICES.has(v.name));
+    const listed = (nonNovelty.length ? nonNovelty : voices).slice().sort((a, b) => a.name.localeCompare(b.name));
+    const current = pickBestVoice();
+
+    ui.inputVoice.innerHTML = "";
+    for (const v of listed) {
+      const opt = document.createElement("option");
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})`;
+      if (current && v.name === current.name) opt.selected = true;
+      ui.inputVoice.appendChild(opt);
+    }
+  }
+
+  // ---------- practice mode: listen & spell vs. read & spell ----------
+  const MODE_KEY = "spellit_practice_mode";
+  let practiceMode = localStorage.getItem(MODE_KEY) === "read" ? "read" : "listen";
+
+  function setPracticeMode(mode) {
+    practiceMode = mode;
+    localStorage.setItem(MODE_KEY, mode);
+    ui.modeListenBtn.classList.toggle("active", mode === "listen");
+    ui.modeReadBtn.classList.toggle("active", mode === "read");
+  }
+
+  // ---------- session length: sprint / standard / long ----------
+  const LENGTH_KEY = "spellit_session_length";
+  const savedLength = Number(localStorage.getItem(LENGTH_KEY));
+  let SESSION_LENGTH = [5, 10, 20].includes(savedLength) ? savedLength : 10;
+
+  function setSessionLength(n) {
+    SESSION_LENGTH = n;
+    localStorage.setItem(LENGTH_KEY, String(n));
+    for (const chip of ui.lengthChips.querySelectorAll(".chip")) {
+      chip.classList.toggle("active", Number(chip.dataset.value) === n);
+    }
+  }
+
+  // ---------- answer input method: letter tiles vs. typed ----------
+  const INPUT_MODE_KEY = "spellit_input_mode";
+  const VALID_INPUT_MODES = ["tiles", "type", "choice"];
+  let inputMode = VALID_INPUT_MODES.includes(localStorage.getItem(INPUT_MODE_KEY)) ? localStorage.getItem(INPUT_MODE_KEY) : "tiles";
+
+  function setInputMode(mode) {
+    inputMode = mode;
+    localStorage.setItem(INPUT_MODE_KEY, mode);
+    for (const chip of ui.inputModeChips.querySelectorAll(".chip")) {
+      chip.classList.toggle("active", chip.dataset.value === mode);
+    }
+    updateInputModeVisibility();
+  }
+
+  // ---------- timed challenge ----------
+  const TIMED_KEY = "spellit_timed_mode";
+  const TIMED_SECONDS = 15;
+  let timedMode = localStorage.getItem(TIMED_KEY) === "on";
+  let roundTimerInterval = null;
+  let roundTimeLeft = 0;
+
+  function setTimedMode(mode) {
+    timedMode = mode === "on";
+    localStorage.setItem(TIMED_KEY, mode);
+    for (const chip of ui.timedChips.querySelectorAll(".chip")) {
+      chip.classList.toggle("active", chip.dataset.value === mode);
+    }
+  }
+
+  function updateTimerUI() {
+    ui.timerSeconds.textContent = roundTimeLeft;
+    ui.timerPill.classList.toggle("urgent", roundTimeLeft <= 5);
+  }
+
+  function startRoundTimer() {
+    clearRoundTimer();
+    roundTimeLeft = TIMED_SECONDS;
+    ui.timerPill.classList.add("show");
+    updateTimerUI();
+    roundTimerInterval = setInterval(() => {
+      roundTimeLeft -= 1;
+      updateTimerUI();
+      if (roundTimeLeft <= 0) {
+        clearRoundTimer();
+        if (round && !round.done) finishRoundAsWrong("(timeout)", 1);
+      }
+    }, 1000);
+  }
+
+  function clearRoundTimer() {
+    if (roundTimerInterval) {
+      clearInterval(roundTimerInterval);
+      roundTimerInterval = null;
+    }
+  }
+
+  function hideRoundTimer() {
+    clearRoundTimer();
+    ui.timerPill.classList.remove("show");
+  }
+
+  // ---------- spelling style: American vs British ----------
+  const SPELLING_STYLE_KEY = "spellit_spelling_style";
+  let spellingStyle = localStorage.getItem(SPELLING_STYLE_KEY) === "uk" ? "uk" : "us";
+
+  function setSpellingStyle(style) {
+    spellingStyle = style;
+    localStorage.setItem(SPELLING_STYLE_KEY, style);
+    for (const chip of ui.spellingStyleChips.querySelectorAll(".chip")) {
+      chip.classList.toggle("active", chip.dataset.value === style);
+    }
+  }
+
+  function applyVariant(entry) {
+    if (spellingStyle === "uk" && entry.variants && entry.variants.uk) {
+      return { ...entry, word: entry.variants.uk };
+    }
+    return entry;
+  }
+
+  function updateInputModeVisibility() {
+    const mode = answerMode();
+    const isTiles = mode === "tiles";
+    const isTyped = mode === "type";
+    const isChoice = mode === "choice";
+    ui.answerRow.classList.toggle("hidden", !isTiles);
+    ui.rack.classList.toggle("hidden", !isTiles);
+    ui.typedInputRow.classList.toggle("show", isTyped);
+    ui.choiceRow.classList.toggle("show", isChoice);
+    ui.btnClear.classList.toggle("hidden", !isTiles);
+  }
+
+  // ---------- difficulty & category filters ----------
+  const DIFFICULTY_KEY = "spellit_difficulty";
+  const CATEGORY_KEY = "spellit_category";
+  let currentDifficulty = localStorage.getItem(DIFFICULTY_KEY) || "all";
+  let currentCategory = localStorage.getItem(CATEGORY_KEY) || "all";
+
+  function populateCategoryChips() {
+    ui.categoryChips.innerHTML = "";
+    for (const cat of WORD_CATEGORIES) {
+      const btn = document.createElement("button");
+      btn.className = "chip" + (cat.value === currentCategory ? " active" : "");
+      btn.dataset.value = cat.value;
+      btn.textContent = cat.label;
+      btn.addEventListener("click", () => setFilter("category", cat.value));
+      ui.categoryChips.appendChild(btn);
+    }
+  }
+
+  function setFilter(kind, value) {
+    if (kind === "difficulty") {
+      currentDifficulty = value;
+      localStorage.setItem(DIFFICULTY_KEY, value);
+      for (const chip of ui.difficultyChips.querySelectorAll(".chip")) {
+        chip.classList.toggle("active", chip.dataset.value === value);
+      }
+    } else {
+      currentCategory = value;
+      localStorage.setItem(CATEGORY_KEY, value);
+      for (const chip of ui.categoryChips.querySelectorAll(".chip")) {
+        chip.classList.toggle("active", chip.dataset.value === value);
+      }
+    }
+  }
+
+  function getFilteredWordList() {
+    const filtered = WORD_LIST.filter(
+      (w) =>
+        (currentDifficulty === "all" || w.difficulty === currentDifficulty) &&
+        (currentCategory === "all" || w.category === currentCategory)
+    );
+    return filtered.length ? filtered : WORD_LIST;
+  }
+
+  // ---------- word selection ----------
+  let recentWords = [];
+
+  function pickWord() {
+    const available = getFilteredWordList();
+    const unseen = available.filter((entry) => !session.seenWords.has(applyVariant(entry).word));
+    const pool = unseen.length ? unseen : available;
+    const weighted = [];
+    for (const rawEntry of pool) {
+      const entry = applyVariant(rawEntry);
+      const missCount = data.missed[entry.word] || 0;
+      const recentPenalty = recentWords.includes(entry.word) ? 0 : 1;
+      const weight = (1 + missCount * 3) * srsWeight(entry.word) * recentPenalty || 0.1;
+      weighted.push({ entry, weight });
+    }
+    const total = weighted.reduce((s, w) => s + w.weight, 0);
+    let r = Math.random() * total;
+    for (const w of weighted) {
+      r -= w.weight;
+      if (r <= 0) return w.entry;
+    }
+    return weighted[weighted.length - 1].entry;
+  }
+
+  // ---------- session / round state ----------
+  let session = { index: 0, active: false, aiWords: null, aiIndex: 0 };
+  let round = null; // { entry, tiles: [{id,letter,placed}], slots: [{tileId, locked} | null] indexed by position in the word }
+  let tileIdCounter = 0;
+  let roundIdCounter = 0;
+  function answerMode() { return session.active ? session.answerMode : inputMode; }
+  const roundTimeouts = new Set();
+
+  function clearRoundTimeouts() {
+    for (const timer of roundTimeouts) clearTimeout(timer);
+    roundTimeouts.clear();
+  }
+
+  function afterRoundDelay(callback, delay) {
+    const expectedRound = round;
+    const expectedSession = session;
+    const timer = setTimeout(() => {
+      roundTimeouts.delete(timer);
+      if (session === expectedSession && session.active && round === expectedRound) callback();
+    }, delay);
+    roundTimeouts.add(timer);
+  }
+
+  function getReviewEntry(word) {
+    const saved = data.srs[word]?.entry;
+    const entry = saved || WORD_LIST.find((w) => w.word === word || Object.values(w.variants || {}).includes(word));
+    return { ...(entry || {}), word, hint: entry?.hint || "Listen to the word, then spell it." };
+  }
+
+  function getDueEntries() {
+    return Object.entries(data.srs)
+      .filter(([, rec]) => rec.dueAt <= Date.now())
+      .sort((a, b) => a[1].dueAt - b[1].dueAt)
+      .map(([word]) => getReviewEntry(word));
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // ---------- multiple choice: plausible wrong-spelling distractors ----------
+  function corruptWord(word) {
+    const w = word.split("");
+    const i = Math.floor(Math.random() * w.length);
+    const type = Math.floor(Math.random() * 4);
+    const vowels = "aeiou";
+    if (type === 0 && w.length > 3) {
+      const j = Math.min(i + 1, w.length - 1);
+      [w[i], w[j]] = [w[j], w[i]]; // swap adjacent letters
+    } else if (type === 1) {
+      w.splice(i, 0, w[i]); // double a letter
+    } else if (type === 2 && w.length > 4) {
+      w.splice(i, 1); // drop a letter
+    } else if (vowels.includes(w[i])) {
+      let repl;
+      do {
+        repl = vowels[Math.floor(Math.random() * vowels.length)];
+      } while (repl === w[i]);
+      w[i] = repl; // swap a vowel
+    } else {
+      w.splice(i, 0, w[i]); // fallback: double a letter
+    }
+    return w.join("");
+  }
+
+  function generateDistractors(word, count) {
+    const seen = new Set([word]);
+    const result = [];
+    let attempts = 0;
+    while (result.length < count && attempts < 40) {
+      attempts++;
+      const candidate = corruptWord(word);
+      if (!seen.has(candidate)) {
+        seen.add(candidate);
+        result.push(candidate);
+      }
+    }
+    while (result.length < count) {
+      result.push(word + "x".repeat(result.length + 1));
+    }
+    return result;
+  }
+
+  function renderChoices(entry) {
+    const word = entry.word;
+    const options = shuffleArray([word, ...generateDistractors(word, 3)]);
+    ui.choiceRow.innerHTML = "";
+    for (const opt of options) {
+      const btn = document.createElement("button");
+      btn.className = "choice-btn";
+      btn.textContent = opt;
+      btn.dataset.word = opt;
+      btn.addEventListener("click", () => checkChoiceAnswer(opt, btn));
+      ui.choiceRow.appendChild(btn);
+    }
+  }
+
+  function checkChoiceAnswer(selected, btnEl) {
+    if (!round || round.done) return;
+    const word = round.entry.word;
+    const allBtns = [...ui.choiceRow.querySelectorAll(".choice-btn")];
+    allBtns.forEach((b) => (b.disabled = true));
+    if (selected === word) {
+      btnEl.classList.add("correct");
+      round.done = true;
+      onRoundSuccess();
+    } else {
+      btnEl.classList.add("wrong");
+      const correctBtn = allBtns.find((b) => b.dataset.word === word);
+      if (correctBtn) correctBtn.classList.add("correct");
+      finishRoundAsWrong(selected, 1);
+    }
+  }
+
+  function buildRound(entry) {
+    const letters = entry.word.split("");
+    const shuffled = shuffleArray([...letters]);
+    if (shuffled.join("") === entry.word && new Set(letters).size > 1) {
+      const different = shuffled.findIndex((letter) => letter !== shuffled[0]);
+      [shuffled[0], shuffled[different]] = [shuffled[different], shuffled[0]];
+    }
+
+    const tiles = shuffled.map((letter) => ({
+      id: ++tileIdCounter,
+      letter,
+      placed: false,
+    }));
+
+    return {
+      id: ++roundIdCounter,
+      entry,
+      tiles,
+      slots: new Array(letters.length).fill(null),
+      attempts: [],
+      hadError: false,
+      done: false,
+      checking: false,
+      assisted: false,
+      hintLevel: 0,
+      proofSelected: false,
+    };
+  }
+
+  function nextEntry() {
+    if (session.reviewWords) return session.reviewWords[session.index];
+    if (session.aiWords && session.aiIndex < session.aiWords.length) {
+      const entry = applyVariant(session.aiWords[session.aiIndex++]);
+      session.seenWords.add(entry.word);
+      recentWords.push(entry.word);
+      if (recentWords.length > 6) recentWords.shift();
+      return entry;
+    }
+    const entry = pickWord();
+    session.seenWords.add(entry.word);
+    recentWords.push(entry.word);
+    if (recentWords.length > 4) recentWords.shift();
+    return entry;
+  }
+
+  function applyRuleTip(entry) {
+    const tip = entry.rule && RULE_TIPS[entry.rule];
+    ui.ruleTip.classList.remove("show");
+    ui.ruleTipText.textContent = tip || "";
+    ui.studyRuleTip.classList.toggle("show", !!tip);
+    ui.studyRuleTipText.textContent = tip || "";
+  }
+
+  function startRound() {
+    if (!session.active) return;
+    speechRequestId += 1;
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    window.SpellTTS && SpellTTS.stop();
+    ui.speakBtn.classList.remove("speaking");
+    clearRoundTimeouts();
+    hideTutor();
+    hideCoachFeedback();
+    ui.roundResult.classList.add("hidden");
+    ui.feedbackBanner.className = "feedback-banner";
+    const entry = nextEntry();
+    round = buildRound(entry);
+    const prefix = session.kind === "proofread" ? "Sentence" : session.kind === "daily" ? "Daily word" : session.reviewWords ? "Review" : "Word";
+    ui.sessionPosition.textContent = `${prefix} ${session.index + 1} of ${session.length}${session.title ? ` · ${session.title}` : ""}`;
+    ui.btnSkip.disabled = false;
+    ui.typedInput.disabled = false;
+    ui.btnTypedCheck.disabled = false;
+    ui.hintText.textContent = "";
+    el("btn-hint").disabled = false;
+    el("btn-hint").textContent = "Need a hint?";
+    el("hint-level").textContent = "";
+    el("proofread-panel").classList.toggle("hidden", session.kind !== "proofread");
+    ui.speakBtn.classList.remove("hidden");
+    updateInputModeVisibility();
+    ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
+    applyRuleTip(entry);
+    renderAll();
+
+    if (answerMode() === "type") {
+      ui.typedInput.value = "";
+      ui.typedInput.classList.remove("wrong");
+    } else if (answerMode() === "choice") {
+      renderChoices(entry);
+    }
+
+    if (session.kind === "proofread") {
+      ui.studyOverlay.classList.remove("show");
+      ui.speakBtn.classList.add("hidden");
+      ui.typedInputRow.classList.remove("show");
+      renderProofread(entry);
+      if (timedMode) startRoundTimer();
+    } else if (practiceMode === "read" && !session.forceListen) {
+      ui.studyWord.textContent = entry.word.toUpperCase();
+      ui.studyHint.textContent = entry.hint || "";
+      ui.studyOverlay.classList.add("show");
+    } else {
+      ui.studyOverlay.classList.remove("show");
+      afterRoundDelay(() => speak(entry.word), 350);
+      if (answerMode() === "type") afterRoundDelay(() => ui.typedInput.focus(), 400);
+      if (timedMode) startRoundTimer();
+    }
+  }
+
+  function dismissStudyOverlay() {
+    if (!session.active || !round || round.done) return;
+    ui.studyOverlay.classList.remove("show");
+    if (answerMode() === "type") afterRoundDelay(() => ui.typedInput.focus(), 150);
+    if (timedMode) startRoundTimer();
+  }
+
+  function renderAll() {
+    renderRack();
+    renderSlots();
+  }
+
+  function revealHint() {
+    if (!session.active || !round || round.done || round.hintLevel >= 3) return;
+    round.assisted = true;
+    round.hintLevel++;
+    const entry = round.entry;
+    if (round.hintLevel === 1) {
+      ui.hintText.textContent = entry.hint || "No definition saved for this word. Listen again, or reveal its letter groups.";
+      el("btn-hint").textContent = "Show word parts";
+    } else if (round.hintLevel === 2) {
+      const known = PROOFREAD_WORDS.find(w => w.word === entry.word);
+      const syllables = entry.syllables || known?.syllables;
+      const valid = syllables && syllables.replace(/-/g, "") === entry.word;
+      // When curated syllables aren't available, label mechanical groups honestly.
+      ui.hintText.textContent = valid ? `Syllables: ${syllables.split("-").join(" · ")}` : `Letter groups: ${entry.word.match(/.{1,3}/g).join(" · ")}`;
+      ui.ruleTip.classList.toggle("show", !!ui.ruleTipText.textContent);
+      el("btn-hint").textContent = "Show first letter";
+    } else {
+      ui.hintText.textContent = `Starts with ${entry.word[0].toUpperCase()} · ${entry.word.length} letters. ${entry.hint || ""}`;
+      el("btn-hint").textContent = "All hints shown";
+      el("btn-hint").disabled = true;
+    }
+    el("hint-level").textContent = `Hint ${round.hintLevel} of 3 · Assisted answer`;
+  }
+
+  function renderProofread(entry) {
+    const target = el("proofread-sentence"); target.replaceChildren();
+    const wrong = PROOFREAD_MISTAKES[entry.word] || entry.word + entry.word.at(-1);
+    const parts = entry.sentence.split("{word}");
+    const renderText = text => {
+      for (const token of text.split(/([a-zA-Z]+(?:['’][a-zA-Z]+)?)/)) {
+        if (!/^[a-zA-Z]/.test(token)) { target.append(document.createTextNode(token)); continue; }
+        const b = document.createElement("button"); b.className = "sentence-word"; b.textContent = token;
+        b.addEventListener("click", () => {
+          if (!session.active || round.done || round.proofSelected) return;
+          round.hadError = true;
+          el("proofread-status").textContent = `“${token}” is spelt correctly. Try another word.`;
+          SpellLearning.recordAttempt(entry, `Selected “${token}” in the sentence`);
+        });
+        target.append(b);
+      }
+    };
+    renderText(parts[0]);
+    const errorWord = document.createElement("button"); errorWord.className = "sentence-word"; errorWord.textContent = wrong;
+    errorWord.addEventListener("click", () => {
+      if (!session.active || round.done || round.proofSelected) return;
+      round.proofSelected = true;
+      errorWord.classList.add("selected");
+      target.querySelectorAll("button").forEach(b => { b.disabled = true; });
+      el("proofread-status").textContent = "Found it. Now type the correct spelling below.";
+      ui.typedInputRow.classList.add("show"); ui.speakBtn.classList.remove("hidden"); ui.typedInput.focus();
+    });
+    target.append(errorWord); renderText(parts[1]);
+    el("proofread-status").textContent = "Tap the misspelled word, then type the correct spelling.";
+  }
+
+  function renderRack() {
+    ui.rack.innerHTML = "";
+    for (const tile of round.tiles) {
+      const div = document.createElement("button");
+      div.type = "button";
+      div.disabled = tile.placed || round.done || round.checking;
+      div.setAttribute("aria-label", `Letter ${tile.letter.toUpperCase()}`);
+      div.className = "tile" + (tile.placed ? " placed" : "");
+      div.textContent = tile.letter;
+      div.dataset.id = tile.id;
+      if (!tile.placed) {
+        div.addEventListener("click", () => handleTileTap(tile.id));
+      }
+      ui.rack.appendChild(div);
+    }
+  }
+
+  function renderSlots(highlight) {
+    ui.answerRow.innerHTML = "";
+    const wordLen = round.entry.word.length;
+    for (let i = 0; i < wordLen; i++) {
+      const slotDiv = document.createElement("button");
+      slotDiv.type = "button";
+      const filled = round.slots[i];
+      slotDiv.disabled = !filled || filled.locked || round.done || round.checking;
+      slotDiv.setAttribute("aria-label", filled ? `Remove letter ${i + 1}` : `Letter ${i + 1}, empty`);
+      slotDiv.className = "slot" + (filled ? "" : " empty");
+      if (filled) {
+        const tile = round.tiles.find((t) => t.id === filled.tileId);
+        slotDiv.textContent = tile.letter;
+        if (highlight) {
+          slotDiv.classList.add(filled.locked ? "correct" : "wrong");
+        }
+        if (!filled.locked) {
+          slotDiv.addEventListener("click", () => handleSlotTap(i));
+        }
+      }
+      ui.answerRow.appendChild(slotDiv);
+    }
+  }
+
+  function handleTileTap(tileId) {
+    if (!session.active || !round || round.done || round.checking) return;
+    const emptyIndex = round.slots.findIndex((s) => s === null);
+    if (emptyIndex === -1) return;
+    const tile = round.tiles.find((t) => t.id === tileId);
+    if (!tile || tile.placed) return;
+    tile.placed = true;
+    round.slots[emptyIndex] = { tileId, locked: false };
+    renderAll();
+    if (round.slots.every((s) => s !== null)) {
+      afterRoundDelay(checkAnswer, 150);
+    }
+  }
+
+  function handleSlotTap(index) {
+    if (!session.active || !round || round.done || round.checking) return;
+    const slot = round.slots[index];
+    if (!slot || slot.locked) return;
+    const tile = round.tiles.find((t) => t.id === slot.tileId);
+    tile.placed = false;
+    round.slots[index] = null;
+    renderAll();
+  }
+
+  function checkAnswer() {
+    if (!session.active || !round || round.done || round.checking || round.slots.some((slot) => !slot)) return;
+    round.checking = true;
+    const word = round.entry.word;
+    let allCorrect = true;
+    const attemptStr = round.slots
+      .map((slot) => round.tiles.find((t) => t.id === slot.tileId).letter)
+      .join("");
+    round.slots.forEach((slot, i) => {
+      const tile = round.tiles.find((t) => t.id === slot.tileId);
+      slot.locked = tile.letter === word[i];
+      if (!slot.locked) allCorrect = false;
+    });
+    renderSlots(true);
+
+    if (allCorrect) {
+      round.done = true;
+      onRoundSuccess();
+    } else {
+      round.hadError = true;
+      round.attempts.push(attemptStr);
+      SpellLearning.recordAttempt(round.entry, attemptStr);
+      feedbackWrong();
+      trackPatternMistake(round.entry);
+      if (window.SpellAI && SpellAI.isEnabled()) SpellAI.logMistake(word, attemptStr);
+      if (!data.missed[word]) data.missed[word] = 0;
+      data.missed[word] = Math.min(6, data.missed[word] + 1);
+      saveData();
+      afterRoundDelay(() => {
+        // send wrong tiles back to rack; correct ones stay locked in their true position
+        round.slots.forEach((slot, i) => {
+          if (!slot || slot.locked) return;
+          const tile = round.tiles.find((t) => t.id === slot.tileId);
+          tile.placed = false;
+          round.slots[i] = null;
+        });
+        round.checking = false;
+        renderAll();
+      }, 650);
+    }
+  }
+
+  function checkTypedAnswer() {
+    if (!session.active || !round || round.done || round.checking) return;
+    if (session.kind === "proofread" && !round.proofSelected) return;
+    const word = round.entry.word;
+    const attempt = ui.typedInput.value.trim().toLowerCase();
+    if (!attempt) return;
+
+    if (attempt === word) {
+      round.done = true;
+      onRoundSuccess();
+    } else {
+      round.checking = true;
+      round.hadError = true;
+      round.attempts.push(attempt);
+      SpellLearning.recordAttempt(round.entry, attempt.slice(0, 100));
+      feedbackWrong();
+      trackPatternMistake(round.entry);
+      if (window.SpellAI && SpellAI.isEnabled()) SpellAI.logMistake(word, attempt);
+      if (!data.missed[word]) data.missed[word] = 0;
+      data.missed[word] = Math.min(6, data.missed[word] + 1);
+      saveData();
+      ui.typedInput.classList.add("wrong");
+      afterRoundDelay(() => {
+        round.checking = false;
+        ui.typedInput.classList.remove("wrong");
+        ui.typedInput.value = "";
+        ui.typedInput.focus();
+      }, 400);
+    }
+  }
+
+  function feedbackWrong() {
+    if (window.SpellSFX) {
+      SpellSFX.playWrong();
+      SpellSFX.vibrateWrong();
+    }
+  }
+
+  function feedbackCorrect() {
+    if (window.SpellSFX) {
+      SpellSFX.playCorrect();
+      SpellSFX.vibrateCorrect();
+    }
+  }
+
+  function onRoundSuccess() {
+    clearRoundTimer();
+    const word = round.entry.word;
+    if (!round.hadError && data.missed[word]) {
+      data.missed[word] = Math.max(0, data.missed[word] - 1);
+    }
+    if (!data.learned.includes(word)) data.learned.push(word);
+
+    const independent = !round.hadError && !round.assisted;
+    data.curStreak = independent ? data.curStreak + 1 : 0;
+    if (data.curStreak > data.bestStreak) data.bestStreak = data.curStreak;
+    session.bestStreakThisSession = Math.max(session.bestStreakThisSession, data.curStreak);
+    session.correctCount += 1;
+    if (independent) session.independentCount++;
+    if (round.assisted) session.assistedCount++;
+    session.totalCount += 1;
+    if (round.hadError || round.assisted) session.missedWordsThisSession.add(word);
+    if (round.assisted && !round.hadError) SpellLearning.recordAttempt(round.entry, "Solved with a hint");
+    if (session.kind === "daily") SpellLearning.dailyResult(session.date, round.entry, { clean: independent, assisted: round.assisted });
+    if (session.kind === "assessment") {
+      session.assessmentResults[word] = { clean: independent, assisted: round.assisted };
+    }
+    saveData();
+
+    const wasMasteredBefore = !!(data.srs[word] && data.srs[word].reps >= MASTERY_REPS);
+    updateSrsOnResult(word, independent);
+    const isMasteredNow = !!(data.srs[word] && data.srs[word].reps >= MASTERY_REPS);
+    if (!wasMasteredBefore && isMasteredNow) session.masteredThisSession.push(word);
+
+    // Record with coach for adaptive levelling
+    if (window.SpellCoach && !session.kind.startsWith("review")) {
+      window.SpellCoach.recordResult(word, round.entry, independent, round.assisted, round.attempts.length === 0);
+    }
+
+    feedbackCorrect();
+
+    ui.curStreak.textContent = data.curStreak;
+    showFeedback("good", "Correct!");
+
+    if (round.hadError) {
+      showCoachFeedback(round);
+      requestTutorFeedback(round);
+    } else {
+      hideTutor();
+    }
+
+    session.index += 1;
+    ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
+
+    if (round.assisted) showRoundResult(`Correct with a hint: ${word.toUpperCase()}. Try it independently next time.`);
+    else if (round.hadError) showRoundResult(`You got it: ${word.toUpperCase()}. We'll practise this word again.`);
+    else showRoundResult(`Correct spelling: ${word.toUpperCase()}`);
+  }
+
+  function finishRoundAsWrong(attemptText, missPenalty) {
+    if (!session.active || !round || round.done) return;
+    clearRoundTimer();
+    round.done = true;
+    round.hadError = true;
+    const word = round.entry.word;
+    if (attemptText) round.attempts.push(attemptText);
+    SpellLearning.recordAttempt(round.entry, attemptText === "(timeout)" ? "Time ran out" : attemptText || "Skipped");
+    if (round.assisted) session.assistedCount++;
+    if (session.kind === "daily") SpellLearning.dailyResult(session.date, round.entry, { clean: false, assisted: round.assisted });
+    if (session.kind === "assessment") {
+      session.assessmentResults[word] = { clean: false, assisted: round.assisted };
+    }
+    data.missed[word] = Math.min(6, (data.missed[word] || 0) + missPenalty);
+    data.curStreak = 0;
+    session.totalCount += 1;
+    session.missedWordsThisSession.add(word);
+    saveData();
+    updateSrsOnResult(word, false);
+    trackPatternMistake(round.entry);
+    // Record with coach
+    if (window.SpellCoach) {
+      window.SpellCoach.recordResult(word, round.entry, false, round.assisted, round.attempts.length <= 1);
+    }
+    feedbackWrong();
+    ui.curStreak.textContent = 0;
+    showFeedback("bad", `Answer: ${word.toUpperCase()}`);
+    showCoachFeedback(round);
+    requestTutorFeedback(round);
+
+    session.index += 1;
+    ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
+
+    showRoundResult(`Correct spelling: ${word.toUpperCase()}`);
+  }
+
+  function showRoundResult(text) {
+    clearRoundTimeouts();
+    ui.feedbackBanner.className = "feedback-banner";
+    ui.roundResultText.textContent = text;
+    ui.roundResult.classList.remove("hidden");
+    ui.btnNextWord.textContent = session.index >= session.length ? "See results" : "Next word →";
+    ui.btnSkip.disabled = true;
+    ui.typedInput.disabled = true;
+    ui.btnTypedCheck.disabled = true;
+    el("btn-hint").disabled = true;
+    el("proofread-sentence").querySelectorAll("button").forEach(b => { b.disabled = true; });
+    for (const choice of ui.choiceRow.querySelectorAll(".choice-btn")) {
+      choice.disabled = true;
+      choice.classList.toggle("correct", choice.dataset.word === round.entry.word);
+    }
+    ui.btnNextWord.focus();
+  }
+
+  function advanceRound() {
+    if (!session.active || !round?.done) return;
+    if (session.index >= session.length) finishSession();
+    else startRound();
+  }
+
+  function skipRound() {
+    if (!session.active || !round || round.done) return;
+    finishRoundAsWrong(null, 2);
+  }
+
+  // ---------- AI tutor ----------
+  function showCoachFeedback(finishedRound) {
+    if (!window.SpellCoach) return;
+    const attemptText = finishedRound.attempts.length ? finishedRound.attempts[finishedRound.attempts.length - 1] : "";
+    const feedbackHTML = window.SpellCoach.getFeedbackHTML(finishedRound.entry.word, attemptText, finishedRound.entry);
+    // Show coach feedback above the tutor panel
+    const existing = document.getElementById("coach-feedback-box");
+    if (existing) existing.remove();
+    const box = document.createElement("div");
+    box.id = "coach-feedback-box";
+    box.innerHTML = feedbackHTML;
+    const tutorPanel = ui.tutorPanel;
+    if (tutorPanel && tutorPanel.parentNode) {
+      tutorPanel.parentNode.insertBefore(box, tutorPanel);
+    }
+    // Auto-remove after advancing
+  }
+
+  function hideCoachFeedback() {
+    const existing = document.getElementById("coach-feedback-box");
+    if (existing) existing.remove();
+  }
+  function showTutorLoading() {
+    ui.tutorPanel.classList.add("show");
+    ui.tutorText.classList.add("loading");
+    ui.tutorText.textContent = "Coach is thinking";
+  }
+
+  function setTutorText(text) {
+    ui.tutorText.classList.remove("loading");
+    ui.tutorText.textContent = text;
+    ui.tutorPanel.classList.add("show");
+  }
+
+  function hideTutor() {
+    ui.tutorPanel.classList.remove("show");
+    ui.tutorText.classList.remove("loading");
+    ui.tutorText.textContent = "";
+  }
+
+  function requestTutorFeedback(finishedRound) {
+    if (!window.SpellAI || !SpellAI.isEnabled()) return;
+    const roundId = finishedRound.id;
+    showTutorLoading();
+    SpellAI.explainMistake({
+      word: finishedRound.entry.word,
+      hint: finishedRound.entry.hint || "",
+      attempts: finishedRound.attempts,
+    })
+      .then((text) => {
+        if (session.active && round && round.id === roundId) setTutorText(text);
+      })
+      .catch(() => {
+        if (session.active && round && round.id === roundId) hideTutor();
+      });
+  }
+
+  function showFeedback(type, text) {
+    ui.feedbackBanner.textContent = text;
+    ui.feedbackBanner.className = "feedback-banner show-" + type;
+    afterRoundDelay(() => {
+      ui.feedbackBanner.className = "feedback-banner";
+    }, 850);
+  }
+
+  function clearRackSelection() {
+    if (!session.active || !round || round.done || round.checking) return;
+    round.slots.forEach((slot, i) => {
+      if (!slot || slot.locked) return;
+      const tile = round.tiles.find((t) => t.id === slot.tileId);
+      tile.placed = false;
+      round.slots[i] = null;
+    });
+    renderAll();
+  }
+
+  // ---------- navigation ----------
+  function showScreen(name) {
+    for (const key in screens) screens[key].classList.toggle("active", key === name);
+    // Update bottom nav active state
+    document.querySelectorAll(".bottom-nav-item").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.screen === name);
+    });
+    // Render content for certain screens
+    if (name === "lists" && window.SpellFeatures && SpellFeatures.renderLists) SpellFeatures.renderLists();
+    if (name === "home" && window.SpellFeatures) SpellFeatures.renderDaily();
+    if (!session.active) window.SpellSync?.schedule();
+  }
+
+  function updatePracticeSummary() {
+    const inputLabel = { tiles: "Letter tiles", type: "Type it", choice: "Multiple choice" }[inputMode];
+    const difficultyLabel = currentDifficulty === "all" ? "All levels" : currentDifficulty;
+    el("practice-summary").textContent = `${SESSION_LENGTH} words · ${inputLabel} · ${difficultyLabel}${timedMode ? " · Timed" : ""}`;
+    for (const button of screens.home.querySelectorAll(".chip, .mode-btn")) {
+      button.setAttribute("aria-pressed", String(button.classList.contains("active")));
+    }
+  }
+
+  function startSession(reviewWords = null, options = {}) {
+    if (session.active) return;
+    if (reviewWords && !reviewWords.length) return;
+    clearRoundTimeouts();
+    round = null;
+    session = {
+      id: crypto.randomUUID(),
+      index: 0,
+      active: true,
+      aiWords: null,
+      aiIndex: 0,
+      correctCount: 0,
+      independentCount: 0,
+      assistedCount: 0,
+      totalCount: 0,
+      bestStreakThisSession: 0,
+      masteredThisSession: [],
+      missedWordsThisSession: new Set(),
+      reviewWords,
+      length: reviewWords ? (options.fullLength ? reviewWords.length : Math.min(SESSION_LENGTH, reviewWords.length)) : SESSION_LENGTH,
+      seenWords: new Set(),
+      kind: options.kind || (reviewWords ? "review" : "practice"),
+      title: options.title || "",
+      date: options.date,
+      answerMode: options.kind === "proofread" ? "type" : inputMode,
+    };
+    const startedSession = session;
+    data.curStreak = 0;
+    saveData();
+    ui.curStreak.textContent = 0;
+    hideTutor();
+    hideRoundTimer();
+    updateInputModeVisibility();
+    if (window.SpellSFX) SpellSFX.unlock();
+
+    if (!reviewWords && window.SpellCoach && window.SpellCoach.isAssessed() && !window.SpellAI?.isEnabled()) {
+      // Use coach planning for personalised practice
+      const plan = window.SpellCoach.planSession(SESSION_LENGTH, data, WORD_LIST, applyVariant);
+      session.reviewWords = plan.entries;
+      session.length = plan.entries.length;
+      session.kind = "practice";
+      ui.loadingOverlay.classList.remove("show");
+      showScreen("game");
+      startRound();
+    } else if (!reviewWords && window.SpellAI && SpellAI.isEnabled()) {
+      ui.loadingText.textContent = "Generating your words…";
+      ui.loadingOverlay.classList.add("show");
+      SpellAI.generateWordBatch(SESSION_LENGTH, {
+        recentWords: data.learned.slice(-20),
+        difficulty: currentDifficulty === "all" ? undefined : currentDifficulty,
+        category: currentCategory === "all" ? undefined : currentCategory,
+        weakPatterns: topWeakPatterns(3),
+        spellingStyle,
+      })
+        .then((words) => {
+          if (session !== startedSession || !session.active) return;
+          session.aiWords = words;
+          session.aiIndex = 0;
+          ui.loadingOverlay.classList.remove("show");
+          showScreen("game");
+          startRound();
+        })
+        .catch((err) => {
+          if (session !== startedSession || !session.active) return;
+          console.warn("AI word generation failed, falling back to classic list:", err);
+          ui.loadingOverlay.classList.remove("show");
+          showScreen("game");
+          startRound();
+          showFeedback("bad", "AI unavailable — using classic words");
+        });
+    } else {
+      showScreen("game");
+      startRound();
+    }
+  }
+
+  function endSession() {
+    speechRequestId += 1;
+    session.active = false;
+    round = null;
+    clearRoundTimeouts();
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    window.SpellTTS && SpellTTS.stop();
+    hideTutor();
+    hideRoundTimer();
+    ui.studyOverlay.classList.remove("show");
+    updateHomeStats();
+    showScreen("home");
+  }
+
+  function finishSession() {
+    if (!session.active) return;
+    speechRequestId += 1;
+    session.active = false;
+    clearRoundTimeouts();
+    data.sessionsCompleted += 1;
+    SpellLearning.completeSession(session.id, { independent: session.independentCount, assisted: session.assistedCount, total: session.totalCount }, data.sessionsCompleted);
+
+    // Handle assessment completion
+    if (session.kind === "assessment" && window.SpellCoach) {
+      window.SpellCoach.recordAssessment(session.reviewWords, session.assessmentResults);
+      saveData();
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      window.SpellTTS && SpellTTS.stop();
+      hideTutor();
+      hideRoundTimer();
+      hideCoachFeedback();
+      ui.studyOverlay.classList.remove("show");
+      updateHomeStats();
+      // Show assessment summary on the normal summary screen instead of blocking alert.
+      const level = window.SpellCoach.getLevel();
+      const levelName = window.SpellCoach.getLevelName();
+      const correct = session.correctCount;
+      const total = session.totalCount;
+      ui.summaryTitle.textContent = "Assessment complete!";
+      ui.summarySubtitle.textContent = `You're starting at ${levelName} (level ${level}). We'll adjust your level automatically as you practice.`;
+      ui.summaryCorrect.textContent = `${correct}/${total}`;
+      ui.summaryStreak.textContent = session.bestStreakThisSession;
+      ui.summaryMastered.textContent = session.masteredThisSession.length;
+      el("summary-assistance").textContent = `${session.independentCount} independently · ${session.assistedCount} with hints`;
+      ui.summaryMasteredSection.classList.add("hidden");
+      ui.summaryReviewSection.classList.add("hidden");
+      ui.btnRetryMissed.classList.add("hidden");
+      showScreen("summary");
+      return;
+    }
+
+    saveData();
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    window.SpellTTS && SpellTTS.stop();
+    hideTutor();
+    hideRoundTimer();
+    ui.studyOverlay.classList.remove("show");
+    updateHomeStats();
+
+    const correct = session.correctCount;
+    const total = session.totalCount;
+    const pct = total ? correct / total : 0;
+
+    ui.summaryCorrect.textContent = `${correct}/${total}`;
+    ui.summaryStreak.textContent = session.bestStreakThisSession;
+    ui.summaryMastered.textContent = session.masteredThisSession.length;
+    el("summary-assistance").textContent = `${session.independentCount} independently · ${session.assistedCount} with hints · ${session.totalCount - session.independentCount - session.assistedCount} to keep practising`;
+
+    if (session.kind === "daily") {
+      ui.summaryTitle.textContent = "Daily five complete!";
+      ui.summarySubtitle.textContent = "A little practice adds up. Your next challenge arrives tomorrow.";
+    } else if (total > 0 && pct === 1 && !session.missedWordsThisSession.size) {
+      ui.summaryTitle.textContent = "Perfect Session!";
+      ui.summarySubtitle.textContent = "Every word right — outstanding.";
+    } else if (pct >= 0.7) {
+      ui.summaryTitle.textContent = "Nice Work!";
+      ui.summarySubtitle.textContent = "Solid session — keep it up.";
+    } else {
+      ui.summaryTitle.textContent = "Session Complete";
+      ui.summarySubtitle.textContent = "Keep practicing — you'll get there.";
+    }
+
+    if (session.masteredThisSession.length) {
+      ui.summaryMasteredSection.classList.remove("hidden");
+      ui.summaryMasteredList.innerHTML = "";
+      for (const word of session.masteredThisSession) {
+        ui.summaryMasteredList.appendChild(renderWordRow(word, "Mastered", "mastered"));
+      }
+    } else {
+      ui.summaryMasteredSection.classList.add("hidden");
+    }
+
+    const missedList = [...session.missedWordsThisSession];
+    ui.btnRetryMissed.classList.toggle("hidden", !missedList.length);
+    ui.btnRetryMissed.textContent = `Practise ${missedList.length} missed ${missedList.length === 1 ? "word" : "words"} →`;
+    if (missedList.length) {
+      ui.summaryReviewSection.classList.remove("hidden");
+      ui.summaryReviewList.innerHTML = "";
+      for (const word of missedList.slice(0, 10)) {
+        ui.summaryReviewList.appendChild(renderWordRow(word, "Review", "due"));
+      }
+    } else {
+      ui.summaryReviewSection.classList.add("hidden");
+    }
+
+    showScreen("summary");
+  }
+
+  // ---------- settings screen ----------
+  function openSettings() {
+    ui.inputToggleSound.checked = SpellSFX.isSoundEnabled();
+    ui.inputToggleHaptic.checked = SpellSFX.isHapticEnabled();
+    ui.inputToggleTheme.checked = localStorage.getItem("spellit_dark_theme") === "1";
+
+    const cfg = SpellAI.loadConfig();
+    ui.inputToggleAI.checked = !!cfg.useAI;
+    ui.inputApiKey.value = cfg.apiKey || "";
+    ui.inputModel.value = cfg.model || SpellAI.DEFAULT_MODEL;
+    ui.settingsStatus.textContent = "";
+    ui.settingsStatus.className = "settings-status";
+    populateVoiceSelect();
+
+    const ttsCfg = SpellTTS.loadConfig();
+    ui.inputToggleElevenlabs.checked = !!ttsCfg.useElevenLabs;
+    ui.inputElevenlabsKey.value = ttsCfg.apiKey || "";
+    ui.inputElevenlabsVoice.innerHTML = `<option value="${ttsCfg.voiceId || SpellTTS.DEFAULT_VOICE_ID}">${ttsCfg.voiceName || SpellTTS.DEFAULT_VOICE_NAME}</option>`;
+    ui.elevenlabsStatus.textContent = "";
+    ui.elevenlabsStatus.className = "settings-status";
+
+    showScreen("settings");
+  }
+
+  function readSettingsForm() {
+    return {
+      useAI: ui.inputToggleAI.checked,
+      apiKey: ui.inputApiKey.value.trim(),
+      model: ui.inputModel.value.trim() || SpellAI.DEFAULT_MODEL,
+    };
+  }
+
+  function readElevenLabsForm() {
+    const select = ui.inputElevenlabsVoice;
+    const selectedOption = select.options[select.selectedIndex];
+    return {
+      useElevenLabs: ui.inputToggleElevenlabs.checked,
+      apiKey: ui.inputElevenlabsKey.value.trim(),
+      voiceId: select.value || SpellTTS.DEFAULT_VOICE_ID,
+      voiceName: selectedOption ? selectedOption.textContent : SpellTTS.DEFAULT_VOICE_NAME,
+    };
+  }
+
+  function saveSettings() {
+    SpellAI.saveConfig(readSettingsForm());
+    SpellTTS.saveConfig(readElevenLabsForm());
+    ui.settingsStatus.textContent = "Saved";
+    ui.settingsStatus.className = "settings-status ok";
+  }
+
+  // ---------- history / progress screen ----------
+  function findWordHint(word) {
+    if (data.srs[word]?.entry?.hint) return data.srs[word].entry.hint;
+    const entry = WORD_LIST.find((w) => w.word === word || (w.variants && Object.values(w.variants).includes(word)));
+    return entry ? entry.hint : "";
+  }
+
+  function formatDueBadge(rec) {
+    const now = Date.now();
+    if (rec.dueAt <= now) {
+      const overdueDays = Math.floor((now - rec.dueAt) / 86400000);
+      return overdueDays > 0 ? `${overdueDays}d overdue` : "Due now";
+    }
+    const inDays = Math.ceil((rec.dueAt - now) / 86400000);
+    return `In ${inDays}d`;
+  }
+
+  function renderWordRow(word, badgeText, badgeClass) {
+    const hint = findWordHint(word);
+    const row = document.createElement("div");
+    row.className = "word-row";
+
+    const main = document.createElement("div");
+    main.className = "word-row-main";
+    const wordEl = document.createElement("div");
+    wordEl.className = "word-row-word";
+    wordEl.textContent = word;
+    main.appendChild(wordEl);
+    if (hint) {
+      const hintEl = document.createElement("div");
+      hintEl.className = "word-row-hint";
+      hintEl.textContent = hint;
+      main.appendChild(hintEl);
+    }
+
+    const badge = document.createElement("div");
+    badge.className = "word-row-badge " + badgeClass;
+    badge.textContent = badgeText;
+
+    row.appendChild(main);
+    row.appendChild(badge);
+    return row;
+  }
+
+  function openHistory() {
+    ui.histBest.textContent = data.bestStreak;
+    ui.histMastered.textContent = countMastered();
+    ui.histSessions.textContent = data.sessionsCompleted;
+
+    // Coach progress in history screen
+    if (window.SpellCoach) renderCoachProgress();
+
+    const now = Date.now();
+    const entries = Object.entries(data.srs);
+
+    const due = entries.filter(([, rec]) => rec.dueAt <= now).sort((a, b) => a[1].dueAt - b[1].dueAt);
+    ui.btnHistoryReview.classList.toggle("hidden", !due.length);
+    ui.historyDueList.innerHTML = "";
+    if (!due.length) {
+      ui.historyDueList.innerHTML = '<div class="word-list-empty">Nothing due right now — nice work!</div>';
+    } else {
+      for (const [word, rec] of due.slice(0, 30)) {
+        ui.historyDueList.appendChild(renderWordRow(word, formatDueBadge(rec), "due"));
+      }
+    }
+
+    const mastered = entries.filter(([, rec]) => rec.reps >= MASTERY_REPS).sort((a, b) => b[1].interval - a[1].interval);
+    ui.historyMasteredList.innerHTML = "";
+    if (!mastered.length) {
+      ui.historyMasteredList.innerHTML = '<div class="word-list-empty">Keep practicing to master your first word.</div>';
+    } else {
+      for (const [word, rec] of mastered.slice(0, 30)) {
+        ui.historyMasteredList.appendChild(renderWordRow(word, `Every ${rec.interval}d`, "mastered"));
+      }
+    }
+
+    const patterns = topWeakPatterns(6);
+    ui.historyPatternsList.innerHTML = "";
+    if (!patterns.length) {
+      ui.historyPatternsList.innerHTML = '<div class="word-list-empty">No weak spots spotted yet — keep practicing!</div>';
+    } else {
+      for (const p of patterns) {
+        const row = document.createElement("div");
+        row.className = "word-row";
+        const main = document.createElement("div");
+        main.className = "word-row-main";
+        const title = document.createElement("div");
+        title.className = "word-row-word";
+        title.style.textTransform = "none";
+        title.textContent = p.label;
+        const tip = document.createElement("div");
+        tip.className = "word-row-hint";
+        tip.style.whiteSpace = "normal";
+        tip.textContent = RULE_TIPS[p.rule] || "";
+        main.appendChild(title);
+        main.appendChild(tip);
+        const badge = document.createElement("div");
+        badge.className = "word-row-badge due";
+        badge.textContent = `${p.count}×`;
+        row.appendChild(main);
+        row.appendChild(badge);
+        ui.historyPatternsList.appendChild(row);
+      }
+    }
+
+    showScreen("history");
+  }
+
+  function loadElevenLabsVoices() {
+    const key = ui.inputElevenlabsKey.value.trim();
+    if (!key) {
+      ui.elevenlabsStatus.textContent = "Enter an ElevenLabs API key first.";
+      ui.elevenlabsStatus.className = "settings-status err";
+      return;
+    }
+    SpellTTS.saveConfig(readElevenLabsForm());
+    ui.btnLoadElevenlabsVoices.disabled = true;
+    ui.elevenlabsStatus.textContent = "Loading voices…";
+    ui.elevenlabsStatus.className = "settings-status";
+
+    SpellTTS.listVoices()
+      .then((voices) => {
+        ui.inputElevenlabsVoice.innerHTML = "";
+        for (const v of voices) {
+          const opt = document.createElement("option");
+          opt.value = v.id;
+          opt.textContent = v.name;
+          ui.inputElevenlabsVoice.appendChild(opt);
+        }
+        ui.elevenlabsStatus.textContent = `Loaded ${voices.length} voices`;
+        ui.elevenlabsStatus.className = "settings-status ok";
+      })
+      .catch((err) => {
+        ui.elevenlabsStatus.textContent = "Failed: " + err.message;
+        ui.elevenlabsStatus.className = "settings-status err";
+      })
+      .finally(() => {
+        ui.btnLoadElevenlabsVoices.disabled = false;
+      });
+  }
+
+  function testElevenLabsVoice() {
+    if (!ui.inputElevenlabsKey.value.trim()) {
+      ui.elevenlabsStatus.textContent = "Enter an ElevenLabs API key first.";
+      ui.elevenlabsStatus.className = "settings-status err";
+      return;
+    }
+    SpellTTS.saveConfig(readElevenLabsForm());
+    ui.btnTestElevenlabs.disabled = true;
+    ui.elevenlabsStatus.textContent = "Speaking…";
+    ui.elevenlabsStatus.className = "settings-status";
+
+    SpellTTS.speak("This is how I sound when I say a word like umbrella.")
+      .then(() => {
+        ui.elevenlabsStatus.textContent = "Connected";
+        ui.elevenlabsStatus.className = "settings-status ok";
+      })
+      .catch((err) => {
+        ui.elevenlabsStatus.textContent = "Failed: " + err.message;
+        ui.elevenlabsStatus.className = "settings-status err";
+      })
+      .finally(() => {
+        ui.btnTestElevenlabs.disabled = false;
+      });
+  }
+
+  function testAIConnection() {
+    saveSettings();
+    if (!ui.inputApiKey.value.trim()) {
+      ui.settingsStatus.textContent = "Enter an API key first.";
+      ui.settingsStatus.className = "settings-status err";
+      return;
+    }
+    ui.btnTestAI.disabled = true;
+    ui.settingsStatus.textContent = "Testing…";
+    ui.settingsStatus.className = "settings-status";
+    SpellAI.generateWordBatch(1, {})
+      .then(() => {
+        ui.settingsStatus.textContent = "Connected — AI is working.";
+        ui.settingsStatus.className = "settings-status ok";
+      })
+      .catch((err) => {
+        ui.settingsStatus.textContent = "Failed: " + err.message;
+        ui.settingsStatus.className = "settings-status err";
+      })
+      .finally(() => {
+        ui.btnTestAI.disabled = false;
+      });
+  }
+
+  // ---------- wiring ----------
+  ui.btnStart.addEventListener("click", () => startSession());
+  ui.btnReviewDue.addEventListener("click", () => startSession(getDueEntries()));
+  ui.btnHistoryReview.addEventListener("click", () => startSession(getDueEntries()));
+  ui.btnRetryMissed.addEventListener("click", () => startSession([...session.missedWordsThisSession].map(getReviewEntry)));
+  ui.btnNextWord.addEventListener("click", advanceRound);
+  ui.btnQuit.addEventListener("click", endSession);
+  ui.btnClear.addEventListener("click", clearRackSelection);
+  ui.btnSkip.addEventListener("click", skipRound);
+  ui.speakBtn.addEventListener("click", () => round && speak(round.entry.word));
+
+  ui.modeListenBtn.addEventListener("click", () => setPracticeMode("listen"));
+  ui.modeReadBtn.addEventListener("click", () => setPracticeMode("read"));
+  ui.btnStudyReady.addEventListener("click", dismissStudyOverlay);
+  el("btn-hint").addEventListener("click", revealHint);
+
+  for (const chip of ui.difficultyChips.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => setFilter("difficulty", chip.dataset.value));
+  }
+  populateCategoryChips();
+  setFilter("difficulty", currentDifficulty);
+
+  for (const chip of ui.lengthChips.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => setSessionLength(Number(chip.dataset.value)));
+  }
+  setSessionLength(SESSION_LENGTH);
+
+  for (const chip of ui.inputModeChips.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => setInputMode(chip.dataset.value));
+  }
+  setInputMode(inputMode);
+
+  for (const chip of ui.timedChips.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => setTimedMode(chip.dataset.value));
+  }
+  setTimedMode(timedMode ? "on" : "off");
+
+  for (const chip of ui.spellingStyleChips.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => setSpellingStyle(chip.dataset.value));
+  }
+  setSpellingStyle(spellingStyle);
+
+  ui.btnTypedCheck.addEventListener("click", checkTypedAnswer);
+  ui.typedInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") checkTypedAnswer();
+  });
+
+  ui.btnSettings.addEventListener("click", openSettings);
+  ui.btnSettingsBack.addEventListener("click", () => showScreen("home"));
+  ui.inputToggleSound.addEventListener("change", () => SpellSFX.setSoundEnabled(ui.inputToggleSound.checked));
+  ui.inputToggleHaptic.addEventListener("change", () => SpellSFX.setHapticEnabled(ui.inputToggleHaptic.checked));
+  ui.inputToggleTheme.addEventListener("change", () => {
+    const isDark = ui.inputToggleTheme.checked;
+    document.documentElement.classList.toggle("dark-theme", isDark);
+    localStorage.setItem("spellit_dark_theme", isDark ? "1" : "");
+  });
+
+  ui.btnHistory.addEventListener("click", openHistory);
+  ui.btnHistoryBack.addEventListener("click", () => showScreen("home"));
+  ui.btnPracticeAgain.addEventListener("click", () => startSession());
+  ui.btnSummaryDone.addEventListener("click", () => showScreen("home"));
+
+  ui.btnSaveAI.addEventListener("click", saveSettings);
+  ui.btnTestAI.addEventListener("click", testAIConnection);
+  ui.inputVoice.addEventListener("change", () => {
+    localStorage.setItem(VOICE_KEY, ui.inputVoice.value);
+  });
+  ui.btnTestVoice.addEventListener("click", () => {
+    localStorage.setItem(VOICE_KEY, ui.inputVoice.value);
+    speakDevice("This is how I sound when I say a word like umbrella.");
+  });
+  ui.btnLoadElevenlabsVoices.addEventListener("click", loadElevenLabsVoices);
+  ui.btnTestElevenlabs.addEventListener("click", testElevenLabsVoice);
+
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      if (screens.settings.classList.contains("active")) populateVoiceSelect();
+    };
+  }
+
+  ui.btnReset.addEventListener("click", () => {
+    if (!confirm("Reset all progress, word lists, daily challenges and notebook notes? This also resets linked devices after sync. Download a backup first if you want to keep them.")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    SpellLearning.reset();
+    if (window.SpellCoach) window.SpellCoach.reset();
+    data = loadData();
+    updateHomeStats();
+  });
+
+  // Apply saved theme on load
+  if (localStorage.getItem("spellit_dark_theme") === "1") {
+    document.documentElement.classList.add("dark-theme");
+  }
+
+  // Bottom navigation event handlers
+  document.querySelectorAll(".bottom-nav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.screen;
+      if (target === "home") showScreen("home");
+      else if (target === "lists") showScreen("lists");
+      else if (target === "history") openHistory();
+      else if (target === "settings") openSettings();
+    });
+  });
+
+  updateHomeStats();
+  setPracticeMode(practiceMode);
+
+  // ---------- inject coach UI into history screen ----------
+  if (window.SpellCoach) {
+    // Inject coach stats section into the history screen
+    const historyScreen = screens.history;
+    if (historyScreen) {
+      const coachSection = document.createElement("div");
+      coachSection.id = "coach-stats-section";
+      // Insert after histSessions or at the top of the history screen
+      const anchor = ui.histSessions?.closest(".stats-row") || historyScreen.querySelector(".stats-row");
+      if (anchor) {
+        anchor.insertAdjacentElement("afterend", coachSection);
+      } else {
+        historyScreen.insertBefore(coachSection, historyScreen.firstChild);
+      }
+    }
+
+    // Inject or update assessment card on home
+    function updateCoachHomeUI() {
+      const existingCard = document.getElementById("coach-assessment-card");
+      if (existingCard) existingCard.remove();
+
+      if (!window.SpellCoach.isAssessed()) {
+        const card = document.createElement("div");
+        card.id = "coach-assessment-card";
+        card.className = "coach-assessment-card";
+        card.innerHTML = `
+          <p>Let's find the right level for you. Answer 5 quick words so we can personalise your practice.</p>
+          <button class="btn btn-primary" id="btn-start-assessment">Take level check →</button>
+        `;
+        const practiceSummary = document.getElementById("practice-summary");
+        if (practiceSummary) {
+          practiceSummary.insertAdjacentElement("afterend", card);
+        }
+        // Wire up assessment button
+        const btn = card.querySelector("#btn-start-assessment");
+        if (btn) btn.addEventListener("click", startAssessment);
+      }
+
+      renderCoachProgress();
+    }
+    updateCoachHomeUI();
+
+    // Assessment button is wired inside updateCoachHomeUI via the dedicated card button.
+    // No more capture-phase interception on the main start button — that would break
+    // existing tests and review/due flows that pre-seed localStorage without coach state.
+  }
+  SpellFeatures.init({
+    progress: () => data,
+    variant: applyVariant,
+    show: showScreen,
+    start: startSession,
+    isBusy: () => session.active,
+    replaceProgress: value => { data = value; saveData(); updateHomeStats(); },
+  });
+  updatePracticeSummary();
+  screens.home.addEventListener("click", (event) => {
+    if (event.target.closest(".chip, .mode-btn")) updatePracticeSummary();
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) => {
+        console.warn("Service worker registration failed:", err);
+      });
+    });
+  }
+})();

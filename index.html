@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F7F5EF" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Spell It" />
+<title>Spell It</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+<link rel="stylesheet" href="style.css?v=19" />
+<link rel="stylesheet" href="coach.css?v=19" id="coach-css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME SCREEN -->
+  <section id="screen-home" class="screen active">
+    <div class="home-inner">
+      <h1 class="logo"><img class="logo-icon" src="icons/icon-192.png" alt="" /> Spell It</h1>
+      <h2 class="today-title">A little practice.<br>Words that stay with you.</h2>
+      <p class="tagline">Your personal spelling notebook.</p>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-best">0</div>
+          <div class="stat-label">Best Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-correct">0</div>
+          <div class="stat-label">Mastered</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-due">0</div>
+          <div class="stat-label">Due Today</div>
+        </div>
+      </div>
+
+      <button class="btn btn-review hidden" id="btn-review-due"></button>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-listen" data-mode="listen">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
+          Listen &amp; Spell
+        </button>
+        <button class="mode-btn" id="mode-read" data-mode="read">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          Read &amp; Spell
+        </button>
+      </div>
+
+      <button class="btn btn-primary btn-big" id="btn-start">Start my practice</button>
+      <p class="practice-summary" id="practice-summary"></p>
+      <div class="daily-card">
+        <div class="daily-heading"><h2>Daily five</h2><span id="daily-count">0 / 5</span></div>
+        <p id="daily-description">Five words chosen for you.</p>
+        <div class="week-calendar" id="week-calendar" aria-label="This week's daily challenges"></div>
+        <button class="btn btn-ghost" id="btn-daily">Start today's challenge</button>
+      </div>
+      <div class="feature-links">
+        <button class="feature-link" id="btn-lists"><span>My word lists</span><small>Your words, your practice</small></button>
+        <button class="feature-link" id="btn-proofread"><span>Spot the mistake</span><small>Find it. Fix it.</small></button>
+        <button class="feature-link" id="btn-notebook"><span>Spelling notebook</span><small>Mistakes into memory tips</small></button>
+      </div>
+      <details class="practice-options">
+      <summary>Customise practice</summary>
+      <div class="options-card">
+        <div class="filter-group">
+          <div class="filter-label">Difficulty</div>
+          <div class="chip-row" id="difficulty-chips">
+            <button class="chip active" data-value="all">All</button>
+            <button class="chip" data-value="beginner">Beginner</button>
+            <button class="chip" data-value="easy">Easy</button>
+            <button class="chip" data-value="medium">Medium</button>
+            <button class="chip" data-value="hard">Hard</button>
+            <button class="chip" data-value="expert">Expert</button>
+          </div>
+        </div>
+
+        <div class="options-divider"></div>
+
+        <div class="filter-group">
+          <div class="filter-label">Category</div>
+          <div class="chip-row" id="category-chips"></div>
+        </div>
+
+        <div class="options-divider"></div>
+
+        <div class="filter-group">
+          <div class="filter-label">Session Length</div>
+          <div class="chip-row" id="length-chips">
+            <button class="chip" data-value="5">Sprint · 5</button>
+            <button class="chip active" data-value="10">Standard · 10</button>
+            <button class="chip" data-value="20">Long · 20</button>
+          </div>
+        </div>
+
+        <div class="options-divider"></div>
+
+        <div class="filter-group">
+          <div class="filter-label">Answer With</div>
+          <div class="chip-row" id="input-mode-chips">
+            <button class="chip active" data-value="tiles">Letter Tiles</button>
+            <button class="chip" data-value="type">Type It</button>
+            <button class="chip" data-value="choice">Multiple Choice</button>
+          </div>
+        </div>
+
+        <div class="options-divider"></div>
+
+        <div class="filter-group">
+          <div class="filter-label">Challenge</div>
+          <div class="chip-row" id="timed-chips">
+            <button class="chip active" data-value="off">Untimed</button>
+            <button class="chip" data-value="on">Timed · 15s</button>
+          </div>
+        </div>
+
+        <div class="options-divider"></div>
+
+        <div class="filter-group" style="margin-bottom: 0;">
+          <div class="filter-label">Spelling Style</div>
+          <div class="chip-row" id="spelling-style-chips">
+            <button class="chip active" data-value="us">American (US)</button>
+            <button class="chip" data-value="uk">British (UK)</button>
+          </div>
+        </div>
+      </div>
+
+      </details>
+      <button class="btn btn-ghost" id="btn-history">
+        <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        Your Progress
+      </button>
+      <button class="btn btn-ghost hidden" id="btn-settings">Settings</button>
+    </div>
+  </section>
+
+  <!-- SETTINGS SCREEN -->
+  <section id="screen-settings" class="screen">
+    <header class="settings-header">
+      <button class="icon-btn" id="btn-settings-back" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <h2>Settings</h2>
+    </header>
+
+    <div class="settings-body">
+      <button class="btn btn-review" id="btn-sync">Devices &amp; backup →</button>
+      <div class="filter-label">Feedback</div>
+      <label class="field-label" for="input-toggle-sound">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-title">Sound effects</div>
+            <div class="toggle-sub">Play a chime or buzz for correct and incorrect answers.</div>
+          </div>
+          <input type="checkbox" id="input-toggle-sound" class="switch" />
+        </div>
+      </label>
+      <label class="field-label" for="input-toggle-haptic" style="margin-top: 10px;">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-title">Haptic feedback</div>
+            <div class="toggle-sub">Vibrate on correct and incorrect answers (supported devices only).</div>
+          </div>
+          <input type="checkbox" id="input-toggle-haptic" class="switch" />
+        </div>
+      </label>
+
+      <label class="field-label" for="input-toggle-theme" style="margin-top: 10px;">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-title">Dark theme</div>
+            <div class="toggle-sub">Switch to dark mode for low light.</div>
+          </div>
+          <input type="checkbox" id="input-toggle-theme" class="switch" />
+        </div>
+      </label>
+
+      <div class="section-divider"></div>
+
+      <div class="filter-label">AI</div>
+      <label class="field-label" for="input-toggle-ai">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-title">Use AI-generated words</div>
+            <div class="toggle-sub">Unlimited words, tutor feedback, and adaptive difficulty via OpenRouter.</div>
+          </div>
+          <input type="checkbox" id="input-toggle-ai" class="switch" />
+        </div>
+      </label>
+
+      <label class="field-label" for="input-api-key">OpenRouter API Key</label>
+      <input type="password" id="input-api-key" class="text-input" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false" />
+
+      <label class="field-label" for="input-model">Model</label>
+      <input type="text" id="input-model" class="text-input" placeholder="anthropic/claude-3.5-haiku" autocomplete="off" spellcheck="false" />
+
+      <p class="settings-note">
+        Your key is stored only in this browser's local storage and sent directly to OpenRouter — never to any other server.
+        Get a key at <span class="link-text">openrouter.ai/keys</span>.
+      </p>
+
+      <label class="field-label" for="input-voice">Device Voice (fallback)</label>
+      <div class="voice-row">
+        <select id="input-voice" class="text-input"></select>
+        <button class="btn btn-ghost btn-voice-test" id="btn-test-voice">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
+          Test
+        </button>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <label class="field-label" for="input-toggle-elevenlabs">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-title">Use ElevenLabs voice</div>
+            <div class="toggle-sub">Realistic AI narration for the words you're spelling, instead of the device voice.</div>
+          </div>
+          <input type="checkbox" id="input-toggle-elevenlabs" class="switch" />
+        </div>
+      </label>
+
+      <label class="field-label" for="input-elevenlabs-key">ElevenLabs API Key</label>
+      <input type="password" id="input-elevenlabs-key" class="text-input" placeholder="sk_..." autocomplete="off" spellcheck="false" />
+
+      <label class="field-label" for="input-elevenlabs-voice">ElevenLabs Voice</label>
+      <div class="voice-row">
+        <select id="input-elevenlabs-voice" class="text-input">
+          <option value="21m00Tcm4TlvDq8ikWAM">Rachel (default)</option>
+        </select>
+        <button class="btn btn-ghost btn-voice-test" id="btn-load-elevenlabs-voices">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          Load
+        </button>
+      </div>
+
+      <p class="settings-note">
+        Your ElevenLabs key is stored only in this browser and sent directly to ElevenLabs. Get a key at
+        <span class="link-text">elevenlabs.io</span>. Each word spoken uses your ElevenLabs credits.
+      </p>
+
+      <div id="elevenlabs-status" class="settings-status"></div>
+
+      <button class="btn btn-ghost" id="btn-test-elevenlabs">
+        <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
+        Test ElevenLabs Voice
+      </button>
+
+      <div id="settings-status" class="settings-status"></div>
+
+      <button class="btn btn-ghost" id="btn-test-ai">Test Connection</button>
+      <button class="btn btn-primary btn-big" id="btn-save-ai">Save</button>
+
+      <div class="section-divider"></div>
+
+      <button class="btn btn-ghost" id="btn-reset" style="color: var(--bad); margin-top: 18px;" title="Clear all saved progress">Reset Progress</button>
+    </div>
+  </section>
+
+  <!-- HISTORY / STATS SCREEN -->
+  <section id="screen-lists" class="screen">
+    <header class="settings-header"><button class="icon-btn feature-back" aria-label="Back to home">←</button><h2>My word lists</h2></header>
+    <div class="settings-body">
+      <p class="feature-intro">School homework, work vocabulary, or words you want to get right.</p>
+      <form id="list-form" class="feature-card">
+        <h3 id="list-form-title">Make a word list</h3>
+        <label class="field-label" for="list-name">List name</label>
+        <input id="list-name" class="text-input" maxlength="60" required placeholder="e.g. Friday spellings" />
+        <label class="field-label" for="list-words">Your words</label>
+        <textarea id="list-words" class="text-input" rows="6" required maxlength="30000" placeholder="because&#10;beautiful | Very pleasing to look at | beau-ti-ful"></textarea>
+        <p class="settings-note">Paste words separated by commas, spaces or new lines. Optional: word | definition | syllables. Up to 100 words. Duplicates are removed.</p>
+        <p id="list-status" class="settings-status" role="status"></p>
+        <button class="btn btn-primary" type="submit">Save list</button>
+        <button class="btn btn-ghost hidden" type="button" id="btn-cancel-list">Cancel editing</button>
+      </form>
+      <div id="saved-lists" class="feature-stack"></div>
+    </div>
+  </section>
+
+  <section id="screen-notebook" class="screen">
+    <header class="settings-header"><button class="icon-btn feature-back" aria-label="Back to home">←</button><h2>Spelling notebook</h2></header>
+    <div class="settings-body">
+      <p class="feature-intro">Your attempts, the right spelling, and a reminder in your own words.</p>
+      <label class="field-label" for="notebook-search">Find a word</label>
+      <input class="text-input" id="notebook-search" type="search" placeholder="Search your notebook" />
+      <button class="btn btn-review" id="btn-notebook-practice">Practise these words</button>
+      <div id="notebook-list" class="feature-stack"></div>
+    </div>
+  </section>
+
+  <section id="screen-sync" class="screen">
+    <header class="settings-header"><button class="icon-btn" id="btn-sync-back" aria-label="Back to settings">←</button><h2>Devices &amp; backup</h2></header>
+    <div class="settings-body">
+      <div class="feature-card">
+        <h3>Take your progress with you</h3>
+        <p class="feature-intro">Download a backup and restore it on another device. Includes progress, word lists, notebook notes and daily challenges. API keys stay on this device.</p>
+        <button class="btn btn-primary" id="btn-export">Download backup</button>
+        <label class="field-label" for="backup-file">Restore a Spell It backup</label>
+        <input id="backup-file" type="file" accept=".json,application/json" />
+        <div id="backup-preview" class="hidden">
+          <p id="backup-description"></p>
+          <button class="btn btn-review" id="btn-import">Merge this backup</button>
+        </div>
+        <p id="backup-status" class="settings-status" role="status"></p>
+      </div>
+      <div class="feature-card">
+        <h3>Automatic sync</h3>
+        <p class="feature-intro">Link devices with a private sync code. Progress is encrypted before it leaves your browser. Keep the code private: it gives access to your progress.</p>
+        <p id="sync-availability" class="settings-note">Checking sync availability…</p>
+        <button class="btn btn-primary" id="btn-enable-sync" disabled>Create a sync code</button>
+        <label class="field-label" for="sync-code">Sync code from another device</label>
+        <input id="sync-code" class="text-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your private sync code" />
+        <button class="btn btn-review" id="btn-link-sync" disabled>Link this device</button>
+        <div id="sync-connected" class="hidden">
+          <button class="btn btn-ghost" id="btn-copy-sync">Copy sync code</button>
+          <button class="btn btn-ghost" id="btn-sync-now">Sync now</button>
+          <button class="btn btn-ghost" id="btn-disconnect-sync">Disconnect this device</button>
+        </div>
+        <p id="sync-status" class="settings-status" role="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-history" class="screen">
+    <header class="settings-header">
+      <button class="icon-btn" id="btn-history-back" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <h2>Your Progress</h2>
+    </header>
+
+    <div class="settings-body">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="hist-best">0</div>
+          <div class="stat-label">Best Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="hist-mastered">0</div>
+          <div class="stat-label">Mastered</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="hist-sessions">0</div>
+          <div class="stat-label">Sessions</div>
+        </div>
+      </div>
+
+      <div class="filter-label" style="margin-top: 6px;">Needs Review</div>
+      <div class="word-list" id="history-due-list"></div>
+      <button class="btn btn-review hidden" id="btn-history-review">Review due words</button>
+
+      <div class="filter-label" style="margin-top: 26px;">Mastered Words</div>
+      <div class="word-list" id="history-mastered-list"></div>
+
+      <div class="filter-label" style="margin-top: 26px;">Weak Patterns</div>
+      <div class="word-list" id="history-patterns-list"></div>
+    </div>
+  </section>
+
+  <!-- SESSION SUMMARY SCREEN -->
+  <section id="screen-summary" class="screen">
+    <div class="summary-inner">
+      <div class="summary-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"></path><path d="M7 5H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4"></path><path d="M17 5h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"></path></svg>
+      </div>
+      <h1 class="summary-title" id="summary-title">Session Complete</h1>
+      <p class="summary-subtitle" id="summary-subtitle">Nice work!</p>
+      <p class="assistance-summary" id="summary-assistance"></p>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="summary-correct">0/0</div>
+          <div class="stat-label">Correct</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="summary-streak">0</div>
+          <div class="stat-label">Best Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="summary-mastered">0</div>
+          <div class="stat-label">New Mastered</div>
+        </div>
+      </div>
+
+      <div id="summary-mastered-section" class="hidden">
+        <div class="filter-label" style="margin-top: 6px;">Newly Mastered</div>
+        <div class="word-list" id="summary-mastered-list"></div>
+      </div>
+
+      <div id="summary-review-section" class="hidden">
+        <div class="filter-label" style="margin-top: 26px;">Needs More Practice</div>
+        <div class="word-list" id="summary-review-list"></div>
+      </div>
+
+      <button class="btn btn-review hidden" id="btn-retry-missed">Practise missed words</button>
+      <button class="btn btn-primary btn-big" id="btn-practice-again" style="margin-top: 28px;">Practice Again</button>
+      <button class="btn btn-ghost" id="btn-summary-done">Done</button>
+    </div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="screen-game" class="screen">
+    <header class="game-header">
+      <button class="icon-btn" id="btn-quit" aria-label="Quit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="streak-pill">
+        <svg class="icon-flame" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.176 7.547 7.547 0 01-1.705-1.715.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z" clip-rule="evenodd"></path></svg>
+        <span id="cur-streak">0</span>
+      </div>
+      <div class="timer-pill" id="timer-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg>
+        <span id="timer-seconds">15</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </header>
+
+    <p class="session-position" id="session-position" aria-live="polite"></p>
+    <div class="game-body">
+      <div id="proofread-panel" class="proofread-panel hidden">
+        <div class="feature-eyebrow">Spelling detective</div>
+        <h2>Which word looks wrong?</h2>
+        <p id="proofread-sentence" class="proofread-sentence"></p>
+        <p id="proofread-status" class="settings-note" role="status">Tap the misspelled word, then type the correct spelling.</p>
+      </div>
+      <button class="speaker-btn" id="btn-speak" aria-label="Hear the word">
+        <svg class="speaker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
+        <span class="speaker-text">Tap to hear the word</span>
+      </button>
+
+      <p class="hint" id="hint-text"></p>
+      <div class="hint-controls">
+        <button class="btn btn-ghost" id="btn-hint">Need a hint?</button>
+        <span id="hint-level" class="settings-note" role="status"></span>
+      </div>
+
+      <div class="rule-tip" id="rule-tip">
+        <svg class="rule-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z"></path></svg>
+        <span id="rule-tip-text"></span>
+      </div>
+
+      <div class="answer-row" id="answer-row"></div>
+
+      <div class="rack" id="rack"></div>
+
+      <div class="typed-input-row" id="typed-input-row">
+        <input type="text" id="typed-input" class="typed-input" aria-label="Your spelling" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Type the word…" />
+        <button class="btn btn-primary" id="btn-typed-check">Check</button>
+      </div>
+
+      <div class="choice-row" id="choice-row"></div>
+
+      <div class="game-actions">
+        <button class="btn btn-ghost" id="btn-clear">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+          Clear
+        </button>
+        <button class="btn btn-ghost" id="btn-skip">Skip ›</button>
+      </div>
+
+      <div class="round-result hidden" id="round-result">
+        <p id="round-result-text" role="status"></p>
+        <button class="btn btn-primary" id="btn-next-word">Next word</button>
+      </div>
+
+      <div class="study-overlay" id="study-overlay">
+        <div class="study-eyebrow">Study the word</div>
+        <div class="study-card">
+          <div class="study-word" id="study-word"></div>
+          <div class="study-hint" id="study-hint"></div>
+          <div class="rule-tip" id="study-rule-tip">
+            <svg class="rule-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z"></path></svg>
+            <span id="study-rule-tip-text"></span>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-big" id="btn-study-ready">I'm ready — spell it →</button>
+      </div>
+    </div>
+
+    <div class="tutor-panel" id="tutor-panel">
+      <svg class="tutor-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z"></path><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"></path></svg>
+      <span class="tutor-text" id="tutor-text"></span>
+    </div>
+
+    <div class="feedback-banner" id="feedback-banner" role="status"></div>
+  </section>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">Generating your words…</div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation">
+    <button class="bottom-nav-item active" data-screen="home" id="nav-today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <span>Today</span>
+    </button>
+    <button class="bottom-nav-item" data-screen="lists" id="nav-words">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>My words</span>
+    </button>
+    <button class="bottom-nav-item" data-screen="history" id="nav-progress">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <span>Progress</span>
+    </button>
+    <button class="bottom-nav-item" data-screen="settings" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 13.09H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+</div>
+<script src="words.js?v=19"></script>
+<script src="ai.js?v=19"></script>
+<script src="tts.js?v=19"></script>
+<script src="sfx.js?v=19"></script>
+<script src="practice-content.js?v=19"></script>
+<script src="learning.js?v=19"></script>
+<script src="sync.js?v=19"></script>
+<script src="learning-ui.js?v=19"></script>
+<script src="coach.js?v=19"></script>
+<script src="app.js?v=19"></script>
+</body>
+</html>
