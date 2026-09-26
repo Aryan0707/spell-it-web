@@ -907,6 +907,7 @@
       ui.studyWord.textContent = entry.word.toUpperCase();
       ui.studyHint.textContent = entry.hint || "";
       ui.studyOverlay.classList.add("show");
+      window.SpellPronounce?.mount(el("pronounce-coach"), entry, { speak });
     } else {
       ui.studyOverlay.classList.remove("show");
       afterRoundDelay(() => speak(entry.word), 350);
@@ -959,6 +960,7 @@
     ui.btnStudyReady.textContent = "Hide it & try from memory →";
     ui.studyOverlay.classList.add("show");
     setTeachingInert(true);
+    window.SpellPronounce?.mount(el("pronounce-coach"), entry, { speak });
     el("study-copy").focus();
     speak(entry.word);
   }
@@ -1226,6 +1228,10 @@
 
     ui.curStreak.textContent = data.curStreak;
     showFeedback("good", "Correct!");
+    if (window.SpellDelight) {
+      const source = document.querySelector(".answer-row") || document.querySelector(".game-body");
+      window.SpellDelight.correct({ streak: data.curStreak, fromEl: source });
+    }
 
     if (round.hadError) {
       showCoachFeedback(round);
@@ -1269,6 +1275,7 @@
     feedbackWrong();
     ui.curStreak.textContent = 0;
     showFeedback("bad", `Answer: ${word.toUpperCase()}`);
+    if (window.SpellDelight) window.SpellDelight.wrong();
     showCoachFeedback(round);
     requestTutorFeedback(round);
 
@@ -1634,6 +1641,17 @@
     }
 
     showScreen("summary");
+
+    // Big finish: confetti storm scaled to how well they did.
+    if (window.SpellDelight && total > 0) {
+      const intensity = Math.round(60 + pct * 140);
+      setTimeout(() => {
+        const w = window.innerWidth, h = window.innerHeight;
+        window.SpellDelight._burstAt(w * 0.25, h * 0.35, Math.round(intensity * 0.5));
+        window.SpellDelight._burstAt(w * 0.75, h * 0.35, Math.round(intensity * 0.5));
+        if (pct === 1) window.SpellDelight._burstAt(w * 0.5, h * 0.25, intensity);
+      }, 250);
+    }
   }
 
   // ---------- settings screen ----------

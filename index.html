@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#F7F5EF" />
+<meta name="theme-color" content="#246B5A" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Spell It" />
 <title>Spell It</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=25" />
-<link rel="stylesheet" href="coach.css?v=25" id="coach-css" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=26" />
+<link rel="icon" href="icons/favicon-32.png?v=26" sizes="32x32" />
+<link rel="stylesheet" href="style.css?v=26" />
+<link rel="stylesheet" href="coach.css?v=26" id="coach-css" />
 </head>
 <body>
 <div id="app">
@@ -20,71 +20,143 @@
   <!-- HOME SCREEN -->
   <section id="screen-home" class="screen active">
     <div class="home-inner">
-      <h1 class="logo"><img class="logo-icon" src="icons/icon-192.png" alt="" /> Spell It</h1>
-      <h2 class="today-title">A little practice.<br>Words that stay with you.</h2>
-      <p class="tagline">Your personal spelling notebook.</p>
 
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-value" id="stat-best">0</div>
-          <div class="stat-label">Best Streak</div>
+      <!-- Top brand row -->
+      <header class="home-header">
+        <div class="home-brand">
+          <img class="logo-icon" src="icons/icon-192.png?v=26" alt="" />
+          <span>Spell It</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-correct">0</div>
-          <div class="stat-label">Mastered</div>
+        <button class="icon-btn header-icon" id="btn-header-progress" aria-label="Your progress">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </button>
+      </header>
+
+      <!-- HERO CARD -->
+      <section class="hero-card" aria-label="Your progress today">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <p class="hero-eyebrow"><span id="hero-greeting">Welcome back</span></p>
+        <h1 class="hero-title" id="hero-title">Let's spell something today.</h1>
+
+        <div class="hero-stats">
+          <div class="hero-ring">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="42" class="ring-bg"></circle>
+              <circle cx="50" cy="50" r="42" class="ring-fg" id="hero-ring-fg"></circle>
+            </svg>
+            <div class="hero-ring-inner">
+              <strong id="stat-correct">0</strong>
+              <span>mastered</span>
+            </div>
+          </div>
+
+          <div class="hero-pills">
+            <div class="hero-pill flame">
+              <svg class="icon-flame" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.176 7.547 7.547 0 01-1.705-1.715.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z" clip-rule="evenodd"></path></svg>
+              <div class="hero-pill-copy"><strong id="stat-best">0</strong><span>day streak</span></div>
+            </div>
+            <div class="hero-pill due">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg>
+              <div class="hero-pill-copy"><strong id="stat-due">0</strong><span>due today</span></div>
+            </div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-due">0</div>
-          <div class="stat-label">Due Today</div>
+      </section>
+
+      <!-- PRIMARY CTA -->
+      <button class="hero-cta" id="btn-start">
+        <span class="hero-cta-title">Continue your practice</span>
+        <svg class="hero-cta-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+      </button>
+      <p class="practice-summary" id="practice-summary"></p>
+
+      <!-- Mode toggle: subtle segmented pill under the CTA -->
+      <div class="mode-toggle mode-toggle-inline" role="tablist" aria-label="Practice mode">
+        <button class="mode-btn active" id="mode-listen" data-mode="listen">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
+          Listen
+        </button>
+        <button class="mode-btn" id="mode-read" data-mode="read">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          Read
+        </button>
+      </div>
+
+      <!-- Quick session strip (horizontal scroll on mobile) -->
+      <div class="quick-strip-wrap">
+        <div class="quick-strip" aria-label="Quick starts">
+          <button class="quick-tile" id="btn-daily" aria-label="Daily five">
+            <span class="quick-tile-icon">📅</span>
+            <span class="quick-tile-label">Daily 5</span>
+            <span class="quick-tile-sub" id="daily-count">0 / 5</span>
+          </button>
+          <button class="quick-tile hidden" id="btn-review-due" aria-label="Review due words">
+            <span class="quick-tile-icon">🔁</span>
+            <span class="quick-tile-label">Review</span>
+            <span class="quick-tile-sub">due words</span>
+          </button>
+          <button class="quick-tile" id="btn-proofread" aria-label="Spot the mistake">
+            <span class="quick-tile-icon">🕵️</span>
+            <span class="quick-tile-label">Spot it</span>
+            <span class="quick-tile-sub">find the typo</span>
+          </button>
+          <button class="quick-tile" id="btn-lists" aria-label="My word lists">
+            <span class="quick-tile-icon">📝</span>
+            <span class="quick-tile-label">My lists</span>
+            <span class="quick-tile-sub">your words</span>
+          </button>
+          <button class="quick-tile" id="btn-notebook" aria-label="Spelling notebook">
+            <span class="quick-tile-icon">📓</span>
+            <span class="quick-tile-label">Notebook</span>
+            <span class="quick-tile-sub">memory tips</span>
+          </button>
         </div>
       </div>
 
-      <section class="quick-practice" aria-label="Quick practice">
-        <div class="mode-toggle">
-          <button class="mode-btn active" id="mode-listen" data-mode="listen">
-            <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
-            Listen &amp; Spell
+      <!-- Word of the day -->
+      <section class="wotd-card" aria-labelledby="wotd-heading">
+        <div class="wotd-eyebrow">Word of the day</div>
+        <h3 class="wotd-word" id="wotd-word" aria-live="polite">…</h3>
+        <p class="wotd-hint" id="wotd-hint">Tap to hear it.</p>
+        <div class="wotd-actions">
+          <button class="btn btn-ghost btn-tight" id="btn-wotd-hear" type="button">
+            <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
+            Hear it
           </button>
-          <button class="mode-btn" id="mode-read" data-mode="read">
-            <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            Read &amp; Spell
-          </button>
+          <button class="btn btn-primary btn-tight" id="btn-wotd-learn" type="button">Learn this word →</button>
         </div>
-        <button class="btn btn-primary btn-big" id="btn-start">Start my practice</button>
-        <p class="practice-summary" id="practice-summary"></p>
       </section>
 
+      <!-- LEARNING PATH -->
       <section class="learning-path daily-card" aria-labelledby="path-heading">
         <div class="daily-heading"><h2 id="path-heading">Your learning path</h2><span id="path-count"></span></div>
-        <p>Start with the basics. Work your way to expert, one lesson at a time.</p>
-        <p id="path-description" aria-live="polite"></p>
+        <p id="path-description" aria-live="polite">Start with the basics. Work your way to expert.</p>
         <button class="btn btn-primary btn-big" id="btn-path-start">Start Level 1</button>
         <ol id="path-levels" class="path-levels"></ol>
-        <p class="path-note">Learn → copy → recall → final check. Take as much help as you need while learning. Only the final check unlocks the next lesson.</p>
+        <p class="path-note">Learn → copy → recall → final check. Only the final check unlocks the next lesson.</p>
       </section>
 
-      <button class="btn btn-review hidden" id="btn-review-due"></button>
+      <!-- MORE (collapsed) -->
+      <details class="more-section">
+        <summary><span>More ways to practise</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chev"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
+        <div class="more-body">
+          <section class="daily-card" aria-labelledby="ai-lab-heading">
+            <div class="daily-heading"><h2 id="ai-lab-heading">AI word lab</h2><span id="ai-lab-level"></span></div>
+            <p>Fresh words at your level, with meanings and spelling tips.</p>
+            <button class="btn btn-primary" id="btn-ai-lesson">Learn 5 new words</button>
+            <button class="btn btn-ghost hidden" id="btn-ai-cancel">Cancel generation</button>
+            <p id="ai-lab-status" class="settings-note" role="status"></p>
+            <p class="settings-note">Uses your OpenRouter credits. AI can make mistakes; check unfamiliar words in a dictionary.</p>
+          </section>
 
-      <section class="daily-card" aria-labelledby="ai-lab-heading">
-        <div class="daily-heading"><h2 id="ai-lab-heading">AI word lab</h2><span id="ai-lab-level"></span></div>
-        <p>Keep exploring fresh words at your course level, with meanings and spelling tips.</p>
-        <button class="btn btn-primary" id="btn-ai-lesson">Learn 5 new words</button>
-        <button class="btn btn-ghost hidden" id="btn-ai-cancel">Cancel generation</button>
-        <p id="ai-lab-status" class="settings-note" role="status"></p>
-        <p class="settings-note">Uses your OpenRouter credits. AI can make mistakes; check unfamiliar words in a dictionary.</p>
-      </section>
+          <div class="daily-card">
+            <div class="daily-heading"><h2>This week</h2></div>
+            <p id="daily-description">Five words chosen for you each day.</p>
+            <div class="week-calendar" id="week-calendar" aria-label="This week's daily challenges"></div>
+          </div>
+        </div>
+      </details>
 
-      <div class="daily-card">
-        <div class="daily-heading"><h2>Daily five</h2><span id="daily-count">0 / 5</span></div>
-        <p id="daily-description">Five words chosen for you.</p>
-        <div class="week-calendar" id="week-calendar" aria-label="This week's daily challenges"></div>
-        <button class="btn btn-ghost" id="btn-daily">Start today's challenge</button>
-      </div>
-      <div class="feature-links">
-        <button class="feature-link" id="btn-lists"><span>My word lists</span><small>Your words, your practice</small></button>
-        <button class="feature-link" id="btn-proofread"><span>Spot the mistake</span><small>Find it. Fix it.</small></button>
-        <button class="feature-link" id="btn-notebook"><span>Spelling notebook</span><small>Mistakes into memory tips</small></button>
-      </div>
       <details class="practice-options">
       <summary>Customise practice</summary>
       <div class="options-card">
@@ -151,10 +223,7 @@
       </div>
 
       </details>
-      <button class="btn btn-ghost" id="btn-history">
-        <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-        Your Progress
-      </button>
+      <button class="btn btn-ghost hidden" id="btn-history" aria-hidden="true"></button>
       <button class="btn btn-ghost hidden" id="btn-settings">Settings</button>
     </div>
   </section>
@@ -506,6 +575,7 @@
             <svg class="rule-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z"></path></svg>
             <span id="study-rule-tip-text"></span>
           </div>
+          <div id="pronounce-coach" class="pronounce-coach"></div>
         </div>
         <div id="study-copy-panel" class="study-copy-panel hidden">
           <label class="field-label" for="study-copy">Copy the spelling once. Then we'll hide it.</label>
@@ -551,15 +621,17 @@
   </nav>
 
 </div>
-<script src="words.js?v=25"></script>
-<script src="ai.js?v=25"></script>
-<script src="tts.js?v=25"></script>
-<script src="sfx.js?v=25"></script>
-<script src="practice-content.js?v=25"></script>
-<script src="learning.js?v=25"></script>
-<script src="learning-ui.js?v=25"></script>
-<script src="coach.js?v=25"></script>
-<script src="sync.js?v=25"></script>
-<script src="app.js?v=25"></script>
+<script src="words.js?v=26"></script>
+<script src="ai.js?v=26"></script>
+<script src="tts.js?v=26"></script>
+<script src="pronounce.js?v=26"></script>
+<script src="sfx.js?v=26"></script>
+<script src="delight.js?v=26"></script>
+<script src="practice-content.js?v=26"></script>
+<script src="learning.js?v=26"></script>
+<script src="learning-ui.js?v=26"></script>
+<script src="coach.js?v=26"></script>
+<script src="sync.js?v=26"></script>
+<script src="app.js?v=26"></script>
 </body>
 </html>

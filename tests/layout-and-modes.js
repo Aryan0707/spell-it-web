@@ -5,12 +5,12 @@ async page => {
   await page.setViewportSize({ width: 390, height: 844 });
   const start = await page.locator('#btn-start').boundingBox();
   assert(start.y + start.height < 844, 'Start should be visible on mobile');
-  await page.locator('summary').click();
+  await page.locator('.practice-options > summary').click();
   await page.locator('#length-chips [data-value="5"]').click();
   await page.locator('#input-mode-chips [data-value="choice"]').click();
   assert((await page.locator('#practice-summary').textContent()).includes('5 words · Multiple choice'), 'Summary reflects selections');
   assert(await page.locator('#input-mode-chips [data-value="choice"]').getAttribute('aria-pressed') === 'true', 'Selection is announced');
-  await page.locator('summary').click();
+  await page.locator('.practice-options > summary').click();
   await page.screenshot({ path: '.playwright-cli/spellit-home-after.png' });
   await page.evaluate(() => {
     localStorage.setItem('spellit_v1', JSON.stringify({ bestStreak: 0, curStreak: 0, learned: [], missed: {}, sessionsCompleted: 0, patternMistakes: {}, srs: { cat: { dueAt: 1, reps: 0 } } }));

@@ -61,8 +61,9 @@
     const done = plan.words.filter(w => plan.results[w.word]).length;
     el("daily-count").textContent = `${done} / 5`;
     el("daily-description").textContent = plan.completedAt ? "Today's five are complete. Come back tomorrow for a fresh challenge." : `${plan.reviewCount ? `${plan.reviewCount} review + ${5 - plan.reviewCount} fresh practice` : "Five fresh words"}. A few minutes just for you.`;
-    el("btn-daily").textContent = plan.completedAt ? "Completed today ✓" : done ? "Continue today's challenge →" : "Start today's challenge →";
-    el("btn-daily").disabled = !!plan.completedAt;
+    const dailyButton = el("btn-daily");
+    dailyButton.setAttribute("aria-label", plan.completedAt ? "Daily five completed" : done ? "Continue today's daily five" : "Start today's daily five");
+    dailyButton.disabled = !!plan.completedAt;
     const calendar = el("week-calendar"); calendar.replaceChildren();
     const today = new Date(), monday = new Date(today);
     monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));

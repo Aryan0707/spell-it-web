@@ -9,6 +9,7 @@ async page => {
     speechSynthesis.speak = utter => { window.spokenWord = utter.text; };
   });
   await page.reload();
+  await page.locator('.more-section > summary').click();
   await page.locator('#btn-ai-lesson').click();
   assert(await page.locator('#screen-settings.active').count() === 1, 'Missing key opens settings');
   await page.locator('#input-api-key').fill('mock-key');
