@@ -1,6 +1,16 @@
 (() => {
   "use strict";
 
+  const updateVisibleViewportHeight = () => {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    if (Number.isFinite(height) && height > 0) {
+      document.documentElement.style.setProperty("--spellit-visible-height", `${height}px`);
+    }
+  };
+  updateVisibleViewportHeight();
+  window.addEventListener("resize", updateVisibleViewportHeight, { passive: true });
+  window.visualViewport?.addEventListener("resize", updateVisibleViewportHeight, { passive: true });
+
   const STORAGE_KEY = "spellit_v1";
 
   const el = (id) => document.getElementById(id);

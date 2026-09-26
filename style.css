@@ -114,6 +114,25 @@ body {
   flex-direction: column;
 }
 
+#app:has(#screen-game.active) {
+  height: var(--spellit-visible-height, 100dvh);
+  min-height: 0;
+  max-height: var(--spellit-visible-height, 100dvh);
+  overflow: hidden;
+}
+
+#screen-game.active {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#screen-game.active .game-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .screen { display: none; flex: 1; flex-direction: column; }
 .screen.active {
   display: flex;

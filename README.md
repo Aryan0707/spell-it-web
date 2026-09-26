@@ -93,6 +93,9 @@ playwright-cli -s=spellit-test run-code --filename=tests/learning-path.js
 playwright-cli -s=spellit-test run-code --filename=tests/ai-lessons.js
 playwright-cli -s=spellit-test run-code --filename=tests/layout-and-modes.js
 playwright-cli -s=spellit-test run-code --filename=tests/new-features.js
+playwright-cli -s=spellit-mobile-test open --device="iPhone 15" http://127.0.0.1:8765
+playwright-cli -s=spellit-mobile-test run-code --filename=tests/mobile-typing-layout.js
+playwright-cli -s=spellit-mobile-test close
 playwright-cli -s=spellit-test run-code --filename=tests/two-device-sync.js
 playwright-cli -s=spellit-test close
 node --test tests/build-assets.test.cjs tests/ai-generation.cjs tests/learning-data.cjs tests/coach-features.cjs tests/sync-server.mjs
