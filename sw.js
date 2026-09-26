@@ -1,22 +1,22 @@
 // Bump this on any app-shell change so clients pick up the new files
 // instead of getting stuck on a stale cache.
-const CACHE_NAME = "spellit-v24";
+const CACHE_NAME = "spellit-v25";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=24",
-  "./coach.css?v=24",
-  "./app.js?v=24",
-  "./words.js?v=24",
-  "./ai.js?v=24",
-  "./tts.js?v=24",
-  "./sfx.js?v=24",
-  "./practice-content.js?v=24",
-  "./learning.js?v=24",
-  "./learning-ui.js?v=24",
-  "./coach.js?v=24",
-  "./sync.js?v=24",
+  "./style.css?v=25",
+  "./coach.css?v=25",
+  "./app.js?v=25",
+  "./words.js?v=25",
+  "./ai.js?v=25",
+  "./tts.js?v=25",
+  "./sfx.js?v=25",
+  "./practice-content.js?v=25",
+  "./learning.js?v=25",
+  "./learning-ui.js?v=25",
+  "./coach.js?v=25",
+  "./sync.js?v=25",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

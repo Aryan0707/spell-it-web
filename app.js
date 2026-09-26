@@ -77,6 +77,8 @@
     studyOverlay: el("study-overlay"),
     studyWord: el("study-word"),
     studyHint: el("study-hint"),
+    btnStudyListen: el("btn-study-listen"),
+    btnTypedListen: el("btn-typed-listen"),
     btnStudyReady: el("btn-study-ready"),
     inputToggleElevenlabs: el("input-toggle-elevenlabs"),
     inputElevenlabsKey: el("input-elevenlabs-key"),
@@ -400,6 +402,11 @@
   // ---------- speech ----------
   const VOICE_KEY = "spellit_voice";
   let speechRequestId = 0;
+  function setSpeechButtonsSpeaking(isSpeaking) {
+    for (const button of [ui.speakBtn, ui.btnStudyListen, ui.btnTypedListen]) {
+      button?.classList.toggle("speaking", isSpeaking);
+    }
+  }
   // Names of "novelty" system voices (macOS) that read as robotic/unsettling for a learning app.
   const NOVELTY_VOICES = new Set([
     "Bad News", "Bahh", "Bells", "Boing", "Bubbles", "Cellos", "Good News",
@@ -449,22 +456,22 @@
     }
     utter.rate = 0.95;
     utter.pitch = 1.0;
-    ui.speakBtn.classList.add("speaking");
-    utter.onend = () => ui.speakBtn.classList.remove("speaking");
-    utter.onerror = () => ui.speakBtn.classList.remove("speaking");
+    setSpeechButtonsSpeaking(true);
+    utter.onend = () => setSpeechButtonsSpeaking(false);
+    utter.onerror = () => setSpeechButtonsSpeaking(false);
     window.speechSynthesis.speak(utter);
   }
 
   function speak(text) {
     const requestId = ++speechRequestId;
     if (window.SpellTTS && SpellTTS.isEnabled()) {
-      ui.speakBtn.classList.add("speaking");
+      setSpeechButtonsSpeaking(true);
       SpellTTS.speak(text)
-        .then(() => { if (requestId === speechRequestId) ui.speakBtn.classList.remove("speaking"); })
+        .then(() => { if (requestId === speechRequestId) setSpeechButtonsSpeaking(false); })
         .catch((err) => {
           if (requestId !== speechRequestId) return;
           console.warn("ElevenLabs speech failed, falling back to device voice:", err);
-          ui.speakBtn.classList.remove("speaking");
+          setSpeechButtonsSpeaking(false);
           speakDevice(text);
         });
     } else {
@@ -602,6 +609,8 @@
     ui.typedInputRow.classList.toggle("show", isTyped);
     ui.choiceRow.classList.toggle("show", isChoice);
     ui.btnClear.classList.toggle("hidden", !isTiles);
+    ui.speakBtn.classList.toggle("hidden", isTyped);
+    ui.btnTypedListen.classList.toggle("hidden", !isTyped);
   }
 
   // ---------- difficulty & category filters ----------
@@ -847,7 +856,7 @@
     speechRequestId += 1;
     window.speechSynthesis && window.speechSynthesis.cancel();
     window.SpellTTS && SpellTTS.stop();
-    ui.speakBtn.classList.remove("speaking");
+    setSpeechButtonsSpeaking(false);
     clearRoundTimeouts();
     hideTutor();
     hideCoachFeedback();
@@ -1876,7 +1885,11 @@
     el("ai-lab-status").textContent = "Generation cancelled. You can try again whenever you're ready.";
   });
   el("btn-learn-word").addEventListener("click", teachCurrentWord);
-  el("btn-study-hear").addEventListener("click", () => { if (session.active && round) speak(round.entry.word); });
+  ui.btnStudyListen.addEventListener("click", () => { if (session.active && round) speak(round.entry.word); });
+  ui.btnTypedListen.addEventListener("pointerdown", event => {
+    if (document.activeElement === ui.typedInput) event.preventDefault();
+  });
+  ui.btnTypedListen.addEventListener("click", () => { if (session.active && round) speak(round.entry.word); });
   el("study-copy").addEventListener("keydown", event => {
     if (event.key === "Enter") { event.preventDefault(); dismissStudyOverlay(); }
   });

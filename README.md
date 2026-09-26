@@ -18,7 +18,7 @@ The local server binds to your computer only. Sync data is kept in `.local/sync.
 
 - **Your learning path:** start at Level 1 and progress through Beginner, Easy, Medium, Hard and Expert. Every built-in word belongs to a lesson of up to five words. First see and hear each word, read a memory tip, copy it, then recall it with the spelling hidden. Learning hints and mistakes never affect scores, mastery or course unlocks. The “I don't know yet” button reopens the teaching card. After learning the words, a separate spoken, typed final check unlocks the next lesson when every word is recalled on the first try without help. A failed check can be retried directly without repeating the learning stage. Missed-word practice offers a return to that check. The course is untimed, regardless of free-practice settings. Completed lessons survive reloads, backups and sync; unfinished learning/checks restart on reload. Course completion is separate from long-term word mastery. Placement checks and free practice do not skip course levels.
 
-- Start immediately with saved preferences, or expand **Customise practice**.
+- Start immediately with saved preferences, or expand **Customise practice**. In Read & Spell, use **Listen to the word** on the study card and the inline **Listen** control while typing; both replay through the configured voice (ElevenLabs when enabled).
 - **Review due words** selects saved words in order of due date, up to the selected session length. It keeps the exact spelling previously practised and ignores discovery filters.
 - The session summary lets you practise missed words again.
 - Corrections remain visible until you choose **Next word** or **See results**.
@@ -93,6 +93,9 @@ playwright-cli -s=spellit-test run-code --filename=tests/learning-path.js
 playwright-cli -s=spellit-test run-code --filename=tests/ai-lessons.js
 playwright-cli -s=spellit-test run-code --filename=tests/layout-and-modes.js
 playwright-cli -s=spellit-test run-code --filename=tests/new-features.js
+playwright-cli -s=spellit-audio-test open http://127.0.0.1:8765
+playwright-cli -s=spellit-audio-test run-code --filename=tests/read-spell-listening.js
+playwright-cli -s=spellit-audio-test close
 playwright-cli -s=spellit-mobile-test open --device="iPhone 15" http://127.0.0.1:8765
 playwright-cli -s=spellit-mobile-test run-code --filename=tests/mobile-typing-layout.js
 playwright-cli -s=spellit-mobile-test close

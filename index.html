@@ -11,8 +11,8 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=24" />
-<link rel="stylesheet" href="coach.css?v=24" id="coach-css" />
+<link rel="stylesheet" href="style.css?v=25" />
+<link rel="stylesheet" href="coach.css?v=25" id="coach-css" />
 </head>
 <body>
 <div id="app">
@@ -471,6 +471,10 @@
 
       <div class="typed-input-row" id="typed-input-row">
         <input type="text" id="typed-input" class="typed-input" aria-label="Your spelling" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Type the word…" />
+        <button class="listen-word-btn typed-listen-btn" id="btn-typed-listen" type="button" aria-label="Listen to the word again">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
+          <span>Listen</span>
+        </button>
         <button class="btn btn-primary" id="btn-typed-check">Check</button>
       </div>
 
@@ -493,6 +497,10 @@
         <div class="study-eyebrow" id="study-heading">Study the word</div>
         <div class="study-card">
           <div class="study-word" id="study-word"></div>
+          <button class="listen-word-btn study-listen-btn" id="btn-study-listen" type="button" aria-label="Listen to the word">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
+            <span>Listen to the word</span>
+          </button>
           <div class="study-hint" id="study-hint"></div>
           <div class="rule-tip" id="study-rule-tip">
             <svg class="rule-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z"></path></svg>
@@ -500,7 +508,6 @@
           </div>
         </div>
         <div id="study-copy-panel" class="study-copy-panel hidden">
-          <button class="btn btn-ghost" id="btn-study-hear">Hear this word</button>
           <label class="field-label" for="study-copy">Copy the spelling once. Then we'll hide it.</label>
           <input id="study-copy" class="text-input" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
           <p id="study-copy-status" class="settings-note" role="status">Take your time. This is learning, not a score.</p>
@@ -544,15 +551,15 @@
   </nav>
 
 </div>
-<script src="words.js?v=24"></script>
-<script src="ai.js?v=24"></script>
-<script src="tts.js?v=24"></script>
-<script src="sfx.js?v=24"></script>
-<script src="practice-content.js?v=24"></script>
-<script src="learning.js?v=24"></script>
-<script src="sync.js?v=24"></script>
-<script src="learning-ui.js?v=24"></script>
-<script src="coach.js?v=24"></script>
-<script src="app.js?v=24"></script>
+<script src="words.js?v=25"></script>
+<script src="ai.js?v=25"></script>
+<script src="tts.js?v=25"></script>
+<script src="sfx.js?v=25"></script>
+<script src="practice-content.js?v=25"></script>
+<script src="learning.js?v=25"></script>
+<script src="learning-ui.js?v=25"></script>
+<script src="coach.js?v=25"></script>
+<script src="sync.js?v=25"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>
