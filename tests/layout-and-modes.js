@@ -11,7 +11,7 @@ async page => {
   assert((await page.locator('#practice-summary').textContent()).includes('5 words · Multiple choice'), 'Summary reflects selections');
   assert(await page.locator('#input-mode-chips [data-value="choice"]').getAttribute('aria-pressed') === 'true', 'Selection is announced');
   await page.locator('summary').click();
-  await page.screenshot({ path: '/private/tmp/spellit-home-after.png' });
+  await page.screenshot({ path: '.playwright-cli/spellit-home-after.png' });
   await page.evaluate(() => {
     localStorage.setItem('spellit_v1', JSON.stringify({ bestStreak: 0, curStreak: 0, learned: [], missed: {}, sessionsCompleted: 0, patternMistakes: {}, srs: { cat: { dueAt: 1, reps: 0 } } }));
     localStorage.setItem('spellit_timed_mode', 'on');
@@ -30,7 +30,7 @@ async page => {
   await page.locator('#btn-study-ready').click();
   await page.locator('#round-result:not(.hidden)').waitFor({ timeout: 20000 });
   assert((await page.locator('#round-result-text').textContent()).includes('CAT'), 'Timeout shows persistent answer');
-  await page.screenshot({ path: '/private/tmp/spellit-correction-after.png' });
+  await page.screenshot({ path: '.playwright-cli/spellit-correction-after.png' });
   await page.locator('#btn-next-word').click();
   await page.locator('#btn-summary-done').click();
   for (const width of [320, 390, 1280]) {

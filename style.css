@@ -241,6 +241,7 @@ body {
 .stat-label { font-size: 0.76rem; color: var(--ink-soft); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.04em; position: relative; line-height: 1.3; }
 
 /* ---------- mode toggle (home) ---------- */
+.quick-practice { width: 100%; margin-bottom: 12px; }
 .mode-toggle {
   display: flex;
   gap: 6px;

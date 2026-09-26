@@ -95,7 +95,7 @@ playwright-cli -s=spellit-test run-code --filename=tests/layout-and-modes.js
 playwright-cli -s=spellit-test run-code --filename=tests/new-features.js
 playwright-cli -s=spellit-test run-code --filename=tests/two-device-sync.js
 playwright-cli -s=spellit-test close
-node --test tests/ai-generation.cjs tests/learning-data.cjs tests/coach-features.cjs tests/sync-server.mjs
+node --test tests/build-assets.test.cjs tests/ai-generation.cjs tests/learning-data.cjs tests/coach-features.cjs tests/sync-server.mjs
 node tests/speech-cancellation.cjs
 ```
 

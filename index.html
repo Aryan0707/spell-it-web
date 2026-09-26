@@ -11,8 +11,8 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=22" />
-<link rel="stylesheet" href="coach.css?v=22" id="coach-css" />
+<link rel="stylesheet" href="style.css?v=23" />
+<link rel="stylesheet" href="coach.css?v=23" id="coach-css" />
 </head>
 <body>
 <div id="app">
@@ -39,6 +39,21 @@
         </div>
       </div>
 
+      <section class="quick-practice" aria-label="Quick practice">
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="mode-listen" data-mode="listen">
+            <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
+            Listen &amp; Spell
+          </button>
+          <button class="mode-btn" id="mode-read" data-mode="read">
+            <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Read &amp; Spell
+          </button>
+        </div>
+        <button class="btn btn-primary btn-big" id="btn-start">Start my practice</button>
+        <p class="practice-summary" id="practice-summary"></p>
+      </section>
+
       <section class="learning-path daily-card" aria-labelledby="path-heading">
         <div class="daily-heading"><h2 id="path-heading">Your learning path</h2><span id="path-count"></span></div>
         <p>Start with the basics. Work your way to expert, one lesson at a time.</p>
@@ -59,19 +74,6 @@
         <p class="settings-note">Uses your OpenRouter credits. AI can make mistakes; check unfamiliar words in a dictionary.</p>
       </section>
 
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="mode-listen" data-mode="listen">
-          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
-          Listen &amp; Spell
-        </button>
-        <button class="mode-btn" id="mode-read" data-mode="read">
-          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          Read &amp; Spell
-        </button>
-      </div>
-
-      <button class="btn btn-primary btn-big" id="btn-start">Start my practice</button>
-      <p class="practice-summary" id="practice-summary"></p>
       <div class="daily-card">
         <div class="daily-heading"><h2>Daily five</h2><span id="daily-count">0 / 5</span></div>
         <p id="daily-description">Five words chosen for you.</p>
@@ -542,15 +544,15 @@
   </nav>
 
 </div>
-<script src="words.js?v=22"></script>
-<script src="ai.js?v=22"></script>
-<script src="tts.js?v=22"></script>
-<script src="sfx.js?v=22"></script>
-<script src="practice-content.js?v=22"></script>
-<script src="learning.js?v=22"></script>
-<script src="sync.js?v=22"></script>
-<script src="learning-ui.js?v=22"></script>
-<script src="coach.js?v=22"></script>
-<script src="app.js?v=22"></script>
+<script src="words.js?v=23"></script>
+<script src="ai.js?v=23"></script>
+<script src="tts.js?v=23"></script>
+<script src="sfx.js?v=23"></script>
+<script src="practice-content.js?v=23"></script>
+<script src="learning.js?v=23"></script>
+<script src="sync.js?v=23"></script>
+<script src="learning-ui.js?v=23"></script>
+<script src="coach.js?v=23"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>
