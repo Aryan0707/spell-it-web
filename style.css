@@ -1,40 +1,66 @@
 /* ============================================================
-   Spell It — Ivory + Teal Design System
-   Calm, focused iPhone-first spelling practice.
+   Spell It — Midnight + Mint Design System (v2, dark-only)
+   Mobile-first, one-thumb reach, quiet UI, expressive accents.
    ============================================================ */
 
 :root {
-  /* Warm ivory light theme (default) */
-  --bg: #F7F5EF;
-  --bg-2: #EDE9E0;
-  --bg-3: #E4DFD5;
-  --ink: #202723;
-  --ink-soft: #5A625A;
-  --ink-muted: #8A908A;
-  --primary: #246B5A;
-  --primary-2: #2D8573;
-  --primary-dark: #1D5A4B;
-  --primary-light: #3BA18C;
-  --primary-ghost: rgba(36, 107, 90, 0.08);
-  --good: #22c55e;
-  --good-dark: #16a34a;
-  --bad: #DC2626;
-  --bad-dark: #B91C1C;
-  --tile-bg: #DDD8CF;
-  --tile-bg-2: #D5CFC5;
-  --tile-border: #C5C0B6;
-  --slot-bg: #E8E3D9;
-  --hairline: rgba(32, 39, 35, 0.1);
-  --hairline-strong: rgba(32, 39, 35, 0.16);
-  --sheen: rgba(255, 255, 255, 0.4);
-  --shadow: 0 8px 22px rgba(32, 39, 35, 0.12);
-  --shadow-soft: 0 2px 8px rgba(32, 39, 35, 0.06);
+  /* Layered near-black surfaces (0 = deepest, 3 = highest). */
+  --bg: #0A0C10;              /* app background */
+  --bg-2: #12151B;            /* cards */
+  --bg-3: #1A1E26;            /* elevated cards / inputs */
+  --bg-4: #232833;            /* hovered / active surfaces */
+
+  /* Text: high-contrast primary, calm secondary. */
+  --ink: #F2F4F7;
+  --ink-soft: #B8BEC8;
+  --ink-muted: #7A828E;
+
+  /* Accent: warm mint. Gradient stops for CTAs and rings. */
+  --primary: #4FD1B4;
+  --primary-2: #38BFA1;
+  --primary-dark: #26977E;
+  --primary-light: #7DE6CE;
+  --primary-ghost: rgba(79, 209, 180, 0.14);
+
+  /* Secondary accent for streak / warmth. */
+  --accent-warm: #FFB258;
+  --accent-warm-soft: rgba(255, 178, 88, 0.16);
+
+  /* Semantic. */
+  --good: #34D399;
+  --good-dark: #10B981;
+  --bad: #F87171;
+  --bad-dark: #DC2626;
+
+  /* Tile surface for the drag-and-drop letters. */
+  --tile-bg: #1E232C;
+  --tile-bg-2: #262C38;
+  --tile-border: #333B48;
+  --slot-bg: #10131A;
+
+  /* Hairlines and glass. */
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --sheen: rgba(255, 255, 255, 0.05);
+
+  /* Shadows tuned for dark surfaces — depth without haze. */
+  --shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 12px 30px -8px rgba(79, 209, 180, 0.35);
+
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --radius-sm: 10px;
-  --radius: 14px;
-  --radius-lg: 18px;
-  --nav-height: 64px;
+  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --nav-height: 68px;
+
+  color-scheme: dark;
 }
+
+/* Legacy .dark-theme class kept as a no-op so any old localStorage
+   value or JS toggle doesn't break anything. */
+:root.dark-theme { color-scheme: dark; }
 
 .learning-path { text-align: left; }
 .path-levels { list-style: none; padding: 0; margin: 18px 0; }
@@ -47,34 +73,6 @@
 .path-level.complete { border-color: var(--primary); }
 .learning-path #path-description { font-size: 14px; font-weight: 600; }
 .learning-path .path-note { margin-bottom: 0; }
-
-/* Dark theme override */
-:root.dark-theme {
-  --bg: #0F1114;
-  --bg-2: #1A1C20;
-  --bg-3: #222428;
-  --ink: #EDEDF2;
-  --ink-soft: #9CA0A6;
-  --ink-muted: #656A70;
-  --primary: #3BA18C;
-  --primary-2: #4DB8A4;
-  --primary-dark: #2D8573;
-  --primary-light: #5EC9B4;
-  --primary-ghost: rgba(59, 161, 140, 0.12);
-  --good: #22c55e;
-  --good-dark: #16a34a;
-  --bad: #f0465f;
-  --bad-dark: #c22e46;
-  --tile-bg: #1c1c22;
-  --tile-bg-2: #24242b;
-  --tile-border: #33333c;
-  --slot-bg: #18181d;
-  --hairline: rgba(255, 255, 255, 0.08);
-  --hairline-strong: rgba(255, 255, 255, 0.12);
-  --sheen: rgba(255, 255, 255, 0.05);
-  --shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
-  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.28);
-}
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -99,9 +97,14 @@ html, body {
 }
 
 body {
+  /* Layered ambient gradient — a soft mint aurora at the top of the screen
+     and a warm ember low on the right, giving a subtle sense of depth without
+     ever competing with the content above it. */
   background:
-    radial-gradient(100% 45% at 50% -8%, rgba(36, 107, 90, 0.12), transparent 65%),
+    radial-gradient(120% 55% at 50% -8%, rgba(79, 209, 180, 0.10), transparent 60%),
+    radial-gradient(60% 40% at 100% 100%, rgba(255, 178, 88, 0.06), transparent 70%),
     var(--bg);
+  background-attachment: fixed;
 }
 
 #app {
@@ -357,11 +360,24 @@ body {
 .btn:active { transform: scale(0.97); }
 
 .btn-primary {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 8px 20px rgba(36, 107, 90, 0.3);
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #06110E;
+  font-weight: 700;
+  box-shadow: var(--shadow-glow);
+  position: relative;
+  overflow: hidden;
 }
-.btn-primary:active { background: var(--primary-dark); }
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 100% 0%, rgba(255,255,255,0.22), transparent 60%);
+  pointer-events: none;
+}
+.btn-primary:active {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  box-shadow: 0 6px 14px -4px rgba(79, 209, 180, 0.35);
+}
 .btn-big { font-size: 1.05rem; padding: 16px 28px; margin-bottom: 12px; }
 .btn-ghost { background: transparent; color: var(--ink-soft); font-weight: 600; }
 .btn-ghost:disabled { opacity: 0.5; }
@@ -602,8 +618,8 @@ body {
   outline: 3px solid var(--primary-2);
   outline-offset: 3px;
 }
-.dark-theme .practice-cta {
-  box-shadow: 0 6px 20px rgba(59, 161, 140, 0.3);
+.practice-cta {
+  box-shadow: 0 10px 28px -6px rgba(79, 209, 180, 0.4);
 }
 .session-position {
   text-align: center;
@@ -802,13 +818,13 @@ button:disabled { cursor: default; }
 }
 
 .tile {
-  width: 46px;
-  height: 52px;
-  border-radius: 12px;
-  background: var(--tile-bg-2);
-  border: 1px solid var(--hairline);
-  box-shadow: var(--shadow-soft);
-  font-size: 1.35rem;
+  width: 48px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--tile-bg-2), var(--tile-bg));
+  border: 1px solid var(--tile-border);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font-size: 1.4rem;
   font-weight: 800;
   color: var(--ink);
   text-transform: uppercase;
@@ -957,14 +973,17 @@ button:disabled { cursor: default; }
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-  background: var(--bg);
-  border-top: 1px solid var(--hairline);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  /* Frosted glass, standing off the app background instead of matching it. */
+  background: linear-gradient(180deg, rgba(10, 12, 16, 0.75), rgba(10, 12, 16, 0.92));
+  border-top: 1px solid var(--hairline-strong);
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 100;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: saturate(1.4) blur(24px);
+  -webkit-backdrop-filter: saturate(1.4) blur(24px);
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .bottom-nav-item {
@@ -1228,14 +1247,6 @@ button:disabled { cursor: default; }
   min-height: 44px;
 }
 
-/* ============================================================
-   DARK MODE BODY GRADIENT
-   ============================================================ */
-:root.dark-theme body {
-  background:
-    radial-gradient(100% 45% at 50% -8%, rgba(59, 161, 140, 0.06), transparent 65%),
-    var(--bg);
-}
 
 /* Editorial home hierarchy: one primary action, compact supporting stats. */
 #screen-home .logo { justify-content: flex-start; font-size: 1.15rem; margin-bottom: 24px; }
@@ -1420,9 +1431,8 @@ button:disabled { cursor: default; }
    ============================================================ */
 
 :root {
-  --accent-warm: #ffab4a;
-  --accent-warm-2: #ff8a3c;
-  --accent-warm-ghost: rgba(255, 171, 74, 0.12);
+  --accent-warm-2: #FF9A47;
+  --accent-warm-ghost: rgba(255, 178, 88, 0.14);
 }
 
 .home-inner {
@@ -1461,14 +1471,14 @@ button:disabled { cursor: default; }
 /* HERO CARD — the emotional center */
 .hero-card {
   position: relative;
-  padding: 22px 22px 20px;
-  border-radius: 22px;
+  padding: 24px 22px 22px;
+  border-radius: var(--radius-xl);
   background:
-    radial-gradient(120% 100% at 100% 0%, rgba(59, 161, 140, 0.10), transparent 60%),
-    linear-gradient(160deg, var(--bg-2) 0%, var(--bg) 100%);
-  border: 1px solid var(--hairline);
+    radial-gradient(140% 110% at 100% 0%, rgba(79, 209, 180, 0.14), transparent 60%),
+    linear-gradient(155deg, #171B23 0%, #0E1116 100%);
+  border: 1px solid var(--hairline-strong);
   overflow: hidden;
-  box-shadow: 0 14px 36px -18px rgba(32, 39, 35, 0.28);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .hero-glow {
   position: absolute;
@@ -1770,17 +1780,19 @@ button:disabled { cursor: default; }
   .quick-tile { min-width: 88px; }
 }
 
-/* Dark theme polish for the new bits */
-:root.dark-theme .hero-card {
+/* Dark-theme surface polish — always on now. */
+.hero-card {
   background:
-    radial-gradient(120% 100% at 100% 0%, rgba(59, 161, 140, 0.14), transparent 60%),
-    linear-gradient(160deg, #1c1f24 0%, #14161a 100%);
+    radial-gradient(140% 110% at 100% 0%, rgba(79, 209, 180, 0.14), transparent 60%),
+    linear-gradient(155deg, #171B23 0%, #0E1116 100%);
 }
-:root.dark-theme .wotd-card {
-  background: linear-gradient(180deg, rgba(255, 171, 74, 0.10), transparent 60%), #1a1c20;
+.wotd-card {
+  background:
+    linear-gradient(180deg, rgba(255, 178, 88, 0.10), transparent 60%),
+    var(--bg-2);
 }
-:root.dark-theme .quick-tile { background: #1a1c20; }
-:root.dark-theme .hero-pill { background: #16181c; }
+.quick-tile { background: var(--bg-2); }
+.hero-pill { background: var(--bg-3); }
 
 /* ---- Pronounce coach ---- */
 .pronounce-coach { display: none; }
@@ -1819,21 +1831,22 @@ button:disabled { cursor: default; }
   border: 1px solid rgba(0,0,0,0.12);
   background: white; font-weight: 600; cursor: pointer; font-size: 14px;
 }
-.pc-btn-primary { background: #246B5A; color: white; border-color: #246B5A; }
-.pc-btn-mic.listening { background: #E63946; color: white; border-color: #E63946; }
-.pc-note { font-size: 12px; color: #666; }
+.pc-btn-primary { background: var(--primary); color: #0A0C10; border-color: var(--primary); }
+.pc-btn-mic.listening { background: var(--bad); color: #fff; border-color: var(--bad); }
+.pc-note { font-size: 12px; color: var(--ink-muted); }
 .pc-feedback { font-size: 14px; padding: 6px 0; min-height: 20px; }
-.pc-feedback.ok { color: #246B5A; font-weight: 600; }
-.pc-feedback.miss { color: #B4482D; }
+.pc-feedback.ok { color: var(--primary-light); font-weight: 600; }
+.pc-feedback.miss { color: var(--bad); }
 .pc-ai-tip {
-  margin-top: 6px; padding: 8px 10px; font-size: 13px;
-  background: rgba(255, 200, 87, 0.18); border-radius: 8px; color: #333;
+  margin-top: 6px; padding: 10px 12px; font-size: 13px;
+  background: var(--accent-warm-soft); border: 1px solid var(--hairline);
+  border-radius: 10px; color: var(--ink);
 }
-:root.dark-theme .pronounce-coach {
-  background: rgba(36, 107, 90, 0.15);
-  border-color: rgba(255,255,255,0.08);
+.pronounce-coach {
+  background: rgba(79, 209, 180, 0.10);
+  border-color: var(--hairline-strong);
 }
-:root.dark-theme .pc-chip,
-:root.dark-theme .pc-btn { background: #1a1c20; color: #eee; border-color: rgba(255,255,255,0.15); }
-:root.dark-theme .pc-eyebrow { color: #7fd3bf; }
-:root.dark-theme .pc-letter.done { color: #7fd3bf; }
+.pc-chip,
+.pc-btn { background: var(--bg-3); color: var(--ink); border-color: var(--hairline-strong); }
+.pc-eyebrow { color: var(--primary-light); }
+.pc-letter.done { color: var(--primary-light); }

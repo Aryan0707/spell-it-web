@@ -1639,7 +1639,7 @@
   function openSettings() {
     ui.inputToggleSound.checked = SpellSFX.isSoundEnabled();
     ui.inputToggleHaptic.checked = SpellSFX.isHapticEnabled();
-    ui.inputToggleTheme.checked = localStorage.getItem("spellit_dark_theme") === "1";
+    if (ui.inputToggleTheme) ui.inputToggleTheme.checked = true;
 
     const cfg = SpellAI.loadConfig();
     ui.inputToggleAI.checked = !!cfg.useAI;
@@ -1962,11 +1962,12 @@
   ui.btnSettingsBack.addEventListener("click", () => showScreen("home"));
   ui.inputToggleSound.addEventListener("change", () => SpellSFX.setSoundEnabled(ui.inputToggleSound.checked));
   ui.inputToggleHaptic.addEventListener("change", () => SpellSFX.setHapticEnabled(ui.inputToggleHaptic.checked));
-  ui.inputToggleTheme.addEventListener("change", () => {
-    const isDark = ui.inputToggleTheme.checked;
-    document.documentElement.classList.toggle("dark-theme", isDark);
-    localStorage.setItem("spellit_dark_theme", isDark ? "1" : "");
-  });
+  // Dark theme is now the only theme; the toggle has been removed from the UI.
+  if (ui.inputToggleTheme) {
+    ui.inputToggleTheme.addEventListener("change", () => {
+      ui.inputToggleTheme.checked = true;
+    });
+  }
 
   ui.btnHistory.addEventListener("click", openHistory);
   ui.btnHistoryBack.addEventListener("click", () => showScreen("home"));
@@ -2017,10 +2018,8 @@
     updateHomeStats();
   });
 
-  // Apply saved theme on load
-  if (localStorage.getItem("spellit_dark_theme") === "1") {
-    document.documentElement.classList.add("dark-theme");
-  }
+  // Dark theme is now permanent; the class is set on <html> in the markup.
+  document.documentElement.classList.add("dark-theme");
 
   // Bottom navigation event handlers
   document.querySelectorAll(".bottom-nav-item").forEach(btn => {
