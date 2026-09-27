@@ -205,7 +205,51 @@ const WORD_LIST = [
   { word: "gray", hint: "A color between black and white.", difficulty: "beginner", category: "everyday", variants: { uk: "grey" } },
   { word: "pajamas", hint: "Comfortable clothes you wear to sleep.", difficulty: "easy", category: "home", variants: { uk: "pyjamas" } },
   { word: "mustache", hint: "Hair grown above the upper lip.", difficulty: "medium", category: "people", variants: { uk: "moustache" } },
-  { word: "fulfill", hint: "To carry out a promise or duty.", difficulty: "medium", category: "everyday", rule: "double_consonant", variants: { uk: "fulfil" } }
+  { word: "fulfill", hint: "To carry out a promise or duty.", difficulty: "medium", category: "everyday", rule: "double_consonant", variants: { uk: "fulfil" } },
+
+  // ---------- expansion: more Hard-level vocabulary ----------
+  { word: "achievement", hint: "Something done successfully after effort.", difficulty: "hard", category: "school", rule: "ie_ei" },
+  { word: "committee", hint: "A group chosen to decide something together.", difficulty: "hard", category: "school", rule: "double_consonant" },
+  { word: "conscious", hint: "Awake and aware of what is happening.", difficulty: "hard", category: "people", rule: "silent_letter" },
+  { word: "existence", hint: "The state of being real or alive.", difficulty: "hard", category: "everyday", rule: "tricky_ending" },
+  { word: "independent", hint: "Not needing help from anyone else.", difficulty: "hard", category: "people" },
+  { word: "occurrence", hint: "Something that happens or takes place.", difficulty: "hard", category: "everyday", rule: "double_consonant" },
+  { word: "parallel", hint: "Two lines that stay the same distance apart.", difficulty: "hard", category: "school", rule: "double_consonant" },
+  { word: "possession", hint: "Something you own.", difficulty: "hard", category: "everyday", rule: "double_consonant" },
+  { word: "privilege", hint: "A special right given to some but not all.", difficulty: "hard", category: "people", rule: "vowel_confusion" },
+  { word: "recommend", hint: "To suggest that someone try something you liked.", difficulty: "hard", category: "everyday", rule: "double_consonant" },
+  { word: "sincerely", hint: "In a way you truly mean it.", difficulty: "hard", category: "people", rule: "tricky_ending" },
+  { word: "cemetery", hint: "A place where people are buried.", difficulty: "hard", category: "everyday", rule: "vowel_confusion" },
+  { word: "handkerchief", hint: "A small square of cloth for wiping the nose.", difficulty: "hard", category: "home", rule: "silent_letter" },
+  { word: "sacrilege", hint: "An insult to something people hold sacred.", difficulty: "hard", category: "school", rule: "vowel_confusion" },
+  { word: "yacht", hint: "A sleek boat used for pleasure sailing.", difficulty: "hard", category: "everyday", rule: "silent_letter" },
+  { word: "colonel", hint: "A senior officer in the army, said like 'kernel'.", difficulty: "hard", category: "people", rule: "silent_letter" },
+
+  // ---------- expansion: more Expert-level vocabulary ----------
+  { word: "accommodate", hint: "To make room for or fit in with someone.", difficulty: "expert", category: "everyday", rule: "double_consonant" },
+  { word: "acquiesce", hint: "To quietly agree without protest.", difficulty: "expert", category: "people", rule: "silent_letter" },
+  { word: "liaison", hint: "A person who connects two groups.", difficulty: "expert", category: "people", rule: "vowel_confusion" },
+  { word: "reminiscence", hint: "A memory brought back to mind.", difficulty: "expert", category: "people", rule: "tricky_ending" },
+  { word: "renaissance", hint: "A fresh burst of interest in art and learning.", difficulty: "expert", category: "school", rule: "double_consonant" },
+  { word: "sovereignty", hint: "The power of a country to rule itself.", difficulty: "expert", category: "school", rule: "silent_letter" },
+  { word: "surreptitious", hint: "Done quietly so no one notices.", difficulty: "expert", category: "people", rule: "tricky_ending" },
+  { word: "unanimous", hint: "Agreed on by every single person.", difficulty: "expert", category: "people", rule: "vowel_confusion" },
+  { word: "vengeance", hint: "Getting back at someone for a wrong done.", difficulty: "expert", category: "people", rule: "tricky_ending" },
+  { word: "whimsical", hint: "Playful and a little unpredictable.", difficulty: "expert", category: "people", rule: "silent_letter" },
+  { word: "camaraderie", hint: "The warm bond among people who share time together.", difficulty: "expert", category: "people", rule: "vowel_confusion" },
+  { word: "gauge", hint: "A tool that measures pressure or level.", difficulty: "expert", category: "school", rule: "vowel_confusion" },
+  { word: "inoculate", hint: "To give a vaccine that protects from a disease.", difficulty: "expert", category: "school", rule: "vowel_confusion" },
+  { word: "juxtapose", hint: "To place two things side by side to compare them.", difficulty: "expert", category: "school", rule: "tricky_ending" },
+  { word: "labyrinth", hint: "A confusing maze of paths.", difficulty: "expert", category: "school", rule: "silent_letter" },
+  { word: "mnemonic", hint: "A trick that helps you remember something.", difficulty: "expert", category: "school", rule: "silent_letter" },
+  { word: "paraphernalia", hint: "The collection of small items used for an activity.", difficulty: "expert", category: "everyday", rule: "silent_letter" },
+  { word: "pharaoh", hint: "An ancient Egyptian ruler.", difficulty: "expert", category: "school", rule: "silent_letter" },
+  { word: "supersede", hint: "To take the place of something older.", difficulty: "expert", category: "school", rule: "tricky_ending" },
+  { word: "cinnamon", hint: "A warm brown spice made from tree bark.", difficulty: "hard", category: "food", rule: "double_consonant" },
+  { word: "physician", hint: "A doctor trained to treat illness.", difficulty: "hard", category: "people", rule: "silent_letter" },
+  { word: "resemblance", hint: "The way one thing looks like another.", difficulty: "hard", category: "people", rule: "tricky_ending" },
+  { word: "trustworthy", hint: "Deserving trust and confidence.", difficulty: "hard", category: "people" },
+  { word: "prestigious", hint: "Widely respected and held in high regard.", difficulty: "expert", category: "people", rule: "tricky_ending" }
 ];
 
 const WORD_CATEGORIES = [

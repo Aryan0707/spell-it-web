@@ -1,0 +1,9 @@
+{
+  "name": "spell-it",
+  "private": true,
+  "scripts": {
+    "start": "node server/dev.mjs",
+    "build": "node server/build.mjs",
+    "test": "node --test tests/build-assets.test.cjs tests/ai-generation.cjs tests/learning-data.cjs tests/coach-features.cjs tests/sync-server.mjs tests/srs.test.cjs && node tests/speech-cancellation.cjs"
+  }
+}

@@ -1,28 +1,29 @@
 // Bump this on any app-shell change so clients pick up the new files
 // instead of getting stuck on a stale cache.
-const CACHE_NAME = "spellit-v26";
+const CACHE_NAME = "spellit-v27";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=26",
-  "./coach.css?v=26",
-  "./app.js?v=26",
-  "./words.js?v=26",
-  "./ai.js?v=26",
-  "./tts.js?v=26",
-  "./sfx.js?v=26",
-  "./pronounce.js?v=26",
-  "./delight.js?v=26",
-  "./practice-content.js?v=26",
-  "./learning.js?v=26",
-  "./learning-ui.js?v=26",
-  "./coach.js?v=26",
-  "./sync.js?v=26",
+  "./style.css?v=27",
+  "./coach.css?v=27",
+  "./app.js?v=27",
+  "./words.js?v=27",
+  "./ai.js?v=27",
+  "./tts.js?v=27",
+  "./sfx.js?v=27",
+  "./pronounce.js?v=27",
+  "./delight.js?v=27",
+  "./practice-content.js?v=27",
+  "./srs.js?v=27",
+  "./learning.js?v=27",
+  "./learning-ui.js?v=27",
+  "./coach.js?v=27",
+  "./sync.js?v=27",
   "./manifest.json",
-  "./icons/icon-192.png?v=26",
-  "./icons/icon-512.png?v=26",
-  "./icons/apple-touch-icon.png?v=26",
+  "./icons/icon-192.png?v=27",
+  "./icons/icon-512.png?v=27",
+  "./icons/apple-touch-icon.png?v=27",
 ];
 
 self.addEventListener("install", (event) => {

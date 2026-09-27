@@ -9,7 +9,7 @@ const distPath = path.join(projectRoot, "dist");
 const publicFiles = [
   "index.html", "style.css", "coach.css", "app.js", "words.js", "ai.js", "tts.js",
   "sfx.js", "pronounce.js", "learning.js", "learning-ui.js", "coach.js", "sync.js", "practice-content.js",
-  "sw.js", "manifest.json", "delight.js",
+  "sw.js", "manifest.json", "delight.js", "srs.js",
 ];
 
 async function treePaths(base, relative = "") {

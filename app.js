@@ -328,59 +328,40 @@
   }
 
   // ---------- spaced repetition (lightweight SRS) ----------
-  const MASTERY_REPS = 3; // clean reviews in a row (no error) before a word counts as "mastered"
+  // Pure scheduling logic lives in srs.js so it can be unit-tested.
+  const SRS = window.SpellSRS;
+  const MASTERY_REPS = SRS.MASTERY_REPS;
 
   function countDueToday() {
     const now = Date.now();
-    return Object.values(data.srs).filter((rec) => rec.dueAt <= now).length;
+    return Object.values(data.srs).filter((rec) => SRS.isDue(rec, now)).length;
   }
 
   function countMastered() {
-    return Object.values(data.srs).filter((rec) => rec.reps >= MASTERY_REPS).length;
+    return Object.values(data.srs).filter(SRS.isMastered).length;
   }
 
   function srsWeight(word) {
-    const rec = data.srs[word];
-    if (!rec) return 1; // never scheduled yet — treat as normal priority
-    const now = Date.now();
-    if (rec.dueAt <= now) {
-      const overdueDays = (now - rec.dueAt) / 86400000;
-      return 4 + Math.min(overdueDays, 10); // due (and increasingly overdue) words surface more
-    }
-    return 0.2; // reviewed recently, not due yet — still possible, just deprioritized
+    return SRS.weight(data.srs[word], Date.now());
   }
 
-  const DEFAULT_EASE = 2.5;
-
   function updateSrsOnResult(word, wasClean) {
-    const rec = data.srs[word] || { reps: 0, interval: 0, ease: DEFAULT_EASE };
-    if (rec.ease === undefined) rec.ease = DEFAULT_EASE;
-    if (wasClean) {
-      // Same-day mastery protection: only increment reps if last increment was
-      // on a different calendar day.
-      const shouldIncrement = window.SpellCoach
-        ? window.SpellCoach.canIncrementMastery(word, rec)
-        : true;
-      if (shouldIncrement) {
-        rec.reps += 1;
-      }
-      const nextInterval =
-        rec.reps === 1 ? 1 : rec.reps === 2 ? 3 : Math.min(90, Math.round((rec.interval || 1) * rec.ease));
-      rec.interval = nextInterval;
-      rec.ease = Math.min(3.2, rec.ease + 0.05); // consistently clean reviews slowly widen future gaps
-      rec.dueAt = Date.now() + nextInterval * 86400000;
-    } else {
-      rec.reps = 0;
-      rec.interval = 0;
-      rec.ease = Math.max(1.3, rec.ease - 0.2); // mistakes make the word "stickier" — grows back slower next time
-      rec.dueAt = Date.now();
-    }
-    // Strip internal planning metadata before persisting.
+    const prev = data.srs[word];
+    const canBump = window.SpellCoach ? window.SpellCoach.canIncrementMastery : null;
+    const next = SRS.schedule({
+      rec: prev,
+      wasClean,
+      now: Date.now(),
+      word,
+      canBumpMastery: canBump || undefined,
+    });
+    // Preserve fields the scheduler doesn't own.
     const { _source, ...cleanEntry } = round.entry;
-    rec.entry = cleanEntry;
-    rec.updatedAt = Date.now();
-    if (round.assisted) rec.assistedReviews = (rec.assistedReviews || 0) + 1;
-    data.srs[word] = rec;
+    next.entry = cleanEntry;
+    const previousAssisted = prev && prev.assistedReviews ? prev.assistedReviews : 0;
+    if (round.assisted) next.assistedReviews = previousAssisted + 1;
+    else if (previousAssisted) next.assistedReviews = previousAssisted;
+    data.srs[word] = next;
     saveData();
   }
 
@@ -1805,6 +1786,23 @@
         badge.textContent = `${p.count}×`;
         row.appendChild(main);
         row.appendChild(badge);
+
+        // Drill button: practise 5-10 words that share this rule.
+        const drillWords = WORD_LIST
+          .filter((entry) => entry.rule === p.rule)
+          .map(applyVariant);
+        if (drillWords.length) {
+          const drill = document.createElement("button");
+          drill.type = "button";
+          drill.className = "word-row-action";
+          drill.textContent = "Drill";
+          drill.setAttribute("aria-label", `Practise ${p.label} words`);
+          drill.addEventListener("click", () => {
+            const picked = shuffleArray(drillWords).slice(0, Math.min(SESSION_LENGTH, drillWords.length));
+            startSession(picked, { kind: "review", title: `Pattern: ${p.label}`, fullLength: true });
+          });
+          row.appendChild(drill);
+        }
         ui.historyPatternsList.appendChild(row);
       }
     }
