@@ -9,10 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="Spell It" />
 <title>Spell It</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=27" />
-<link rel="icon" href="icons/favicon-32.png?v=27" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=27" />
-<link rel="stylesheet" href="coach.css?v=27" id="coach-css" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=35" />
+<link rel="icon" href="icons/favicon-32.png?v=35" sizes="32x32" />
+<link rel="stylesheet" href="style.css?v=35" />
+<link rel="stylesheet" href="coach.css?v=35" id="coach-css" />
 </head>
 <body>
 <div id="app">
@@ -24,7 +24,7 @@
       <!-- Top brand row -->
       <header class="home-header">
         <div class="home-brand">
-          <img class="logo-icon" src="icons/icon-192.png?v=27" alt="" />
+          <img class="logo-icon" src="icons/icon-192.png?v=35" alt="" />
           <span>Spell It</span>
         </div>
         <button class="icon-btn header-icon" id="btn-header-progress" aria-label="Your progress">
@@ -294,6 +294,31 @@
 
       <div class="section-divider"></div>
 
+      <label class="field-label" for="input-toggle-neural">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-title">Natural voice (free, works offline)</div>
+            <div class="toggle-sub">A human-sounding AI voice that runs on this device instead of the robotic device voice. Downloads about 90 MB once.</div>
+          </div>
+          <input type="checkbox" id="input-toggle-neural" class="switch" />
+        </div>
+      </label>
+
+      <div id="neural-fields" class="hidden">
+        <label class="field-label" for="input-neural-voice">Natural voice</label>
+        <select id="input-neural-voice" class="text-input"></select>
+        <div id="neural-progress" class="neural-progress hidden"><div class="progress-track"><div class="progress-fill" id="neural-progress-fill"></div></div></div>
+        <div id="neural-status" class="settings-status" role="status"></div>
+        <button class="btn btn-ghost" id="btn-test-neural">Download &amp; test voice</button>
+        <button class="btn btn-ghost" id="btn-neural-all">Save every word for offline</button>
+        <p class="settings-note">
+          Words are prepared in the background and saved on this device, so they play instantly afterwards. A word that isn't ready yet is read by the device voice.
+          If ElevenLabs is switched on below, it is used first. The voice needs a recent browser and extra memory while it runs.
+        </p>
+      </div>
+
+      <div class="section-divider"></div>
+
       <label class="field-label" for="input-toggle-elevenlabs">
         <div class="toggle-row">
           <div>
@@ -353,6 +378,7 @@
         <label class="field-label" for="list-words">Your words</label>
         <textarea id="list-words" class="text-input" rows="6" required maxlength="30000" placeholder="because&#10;beautiful | Very pleasing to look at | beau-ti-ful"></textarea>
         <p class="settings-note">Paste words separated by commas, spaces or new lines. Optional: word | definition | syllables. Up to 100 words. Duplicates are removed.</p>
+        <p id="list-ai-note" class="settings-note"></p>
         <p id="list-status" class="settings-status" role="status"></p>
         <button class="btn btn-primary" type="submit">Save list</button>
         <button class="btn btn-ghost hidden" type="button" id="btn-cancel-list">Cancel editing</button>
@@ -561,6 +587,15 @@
             <span>Listen to the word</span>
           </button>
           <div class="study-hint" id="study-hint"></div>
+          <div class="study-meaning hidden" id="study-meaning">
+            <span class="study-pos" id="study-pos"></span>
+            <p class="study-def" id="study-def"></p>
+            <p class="study-related hidden" id="study-related"></p>
+          </div>
+          <div class="study-examples hidden" id="study-examples-wrap">
+            <div class="study-examples-title">Used in a sentence</div>
+            <ol class="study-examples-list" id="study-examples"></ol>
+          </div>
           <div class="rule-tip" id="study-rule-tip">
             <svg class="rule-tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3h6c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z"></path></svg>
             <span id="study-rule-tip-text"></span>
@@ -611,18 +646,22 @@
   </nav>
 
 </div>
-<script src="words.js?v=27"></script>
-<script src="ai.js?v=27"></script>
-<script src="tts.js?v=27"></script>
-<script src="pronounce.js?v=27"></script>
-<script src="sfx.js?v=27"></script>
-<script src="delight.js?v=27"></script>
-<script src="practice-content.js?v=27"></script>
-<script src="srs.js?v=27"></script>
-<script src="learning.js?v=27"></script>
-<script src="learning-ui.js?v=27"></script>
-<script src="coach.js?v=27"></script>
-<script src="sync.js?v=27"></script>
-<script src="app.js?v=27"></script>
+<script src="words.js?v=35"></script>
+<script src="ai.js?v=35"></script>
+<script src="tts.js?v=35"></script>
+<script src="neural-voice.js?v=35"></script>
+<script src="meanings.js?v=35"></script>
+<script src="sounds.js?v=35"></script>
+<script src="word-info.js?v=35"></script>
+<script src="pronounce.js?v=35"></script>
+<script src="sfx.js?v=35"></script>
+<script src="delight.js?v=35"></script>
+<script src="practice-content.js?v=35"></script>
+<script src="srs.js?v=35"></script>
+<script src="learning.js?v=35"></script>
+<script src="learning-ui.js?v=35"></script>
+<script src="coach.js?v=35"></script>
+<script src="sync.js?v=35"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>

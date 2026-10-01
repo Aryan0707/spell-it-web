@@ -3,11 +3,81 @@
   const el = id => document.getElementById(id);
   const node = (tag, className, text) => { const n = document.createElement(tag); n.className = className; if (text !== undefined) n.textContent = text; return n; };
   let app, editing = null, imported = null, busyApplying = false;
+  const openLists = new Set(); // lists whose words are being read, kept open when the cards redraw
   function button(text, action, className = "btn btn-ghost") {
     const b = node("button", className, text); b.type = "button"; b.addEventListener("click", action); return b;
   }
+  // One word of a list, laid out for reading: meaning, related words, examples and how to say it.
+  function wordDetail(entry) {
+    const shown = app.variant(entry); // the learner's US/UK spelling
+    const info = SpellWordInfo.forEntry(shown);
+    const row = node("article", "word-detail");
+    const head = node("div", "word-detail-head");
+    head.append(node("strong", "word-detail-word", shown.word));
+    const listen = button("Listen", () => app.speak(shown.word), "btn btn-ghost word-detail-listen");
+    listen.setAttribute("aria-label", `Listen to ${shown.word}`);
+    head.append(listen);
+    if (info.meaning) head.append(node("span", "study-pos", info.meaning.pos));
+    row.append(head);
+    row.append(node("p", "word-detail-def", info.meaning ? info.meaning.definition : info.hint || "No meaning saved yet. Add one as “word | definition”, or use Add details with AI."));
+    if (info.meaning && info.meaning.related.length) row.append(node("p", "study-related", `Related: ${info.meaning.related.join(" · ")}`));
+    if (info.examples.length) {
+      const list = node("ul", "word-detail-examples");
+      for (const sentence of info.examples) {
+        const li = document.createElement("li");
+        li.append(...SpellWordInfo.sentenceNodes(sentence, shown.word),
+          SpellWordInfo.listenButton("Listen to this example", () => app.speak(SpellWordInfo.sentenceText(sentence, shown.word))));
+        list.append(li);
+      }
+      row.append(list);
+    }
+    if (info.guide) {
+      const line = node("div", "word-detail-sound");
+      const say = node("span", "pc-say");
+      info.guide.say.forEach((part, i) => {
+        if (i) say.append(node("span", "pc-sep", "·"));
+        say.append(node("span", i === info.guide.stress ? "pc-part pc-stress" : "pc-part", part.toLowerCase()));
+      });
+      const tag = node("span", "pc-accent", info.guide.source === "ai" ? "AI" : "US");
+      tag.title = info.guide.source === "ai" ? "Written by AI, so it may contain mistakes" : "General American pronunciation";
+      line.append(say, node("span", "pc-ipa", info.guide.ipa), tag);
+      row.append(line);
+    }
+    return row;
+  }
+
+  // Ask the AI for the details a list's words are missing. Runs by itself whenever words are saved
+  // and the AI is on, and from the button for lists saved earlier. Only gaps are filled, so definitions
+  // the learner typed are never replaced, and whatever succeeded is kept even if a later batch fails.
+  const filling = new Set(); // lists being filled right now
+  async function addDetailsWithAI(list, trigger, prefix = "") {
+    if (filling.has(list.id)) return;
+    filling.add(list.id);
+    const status = el("list-status");
+    if (trigger) trigger.disabled = true;
+    const { found, failure, asked } = await SpellWordInfo.gatherDetails(
+      list.entries,
+      words => SpellAI.enrichWords(words, { spellingStyle: app.style() }),
+      { batch: SpellAI.ENRICH_BATCH, onProgress: (done, total) => { status.textContent = `${prefix}Adding meanings, examples and pronunciation… ${done} of ${total} words`; } },
+    );
+    filling.delete(list.id);
+    // The list may have been edited or deleted while the AI was thinking, so merge into its current words.
+    const current = SpellLearning.lists().find(l => l.id === list.id);
+    if (!current) { renderLists(); status.textContent = ""; return; }
+    const entries = current.entries.map(e => SpellWordInfo.mergeDetails(e, found.get(e.word)));
+    const changed = entries.filter((e, i) => e !== current.entries[i]).length;
+    if (changed) SpellLearning.saveList(list.id, list.name, entries);
+    if (changed) openLists.add(list.id); // show the learner what was just written
+    renderLists();
+    status.textContent = prefix + (failure ? `Added details to ${changed} words, then stopped: ${failure}`
+      : changed ? `Added meanings, examples and pronunciation to ${changed} of ${asked} words.` : "The AI couldn't add details to these words. Use the button to try again.");
+  }
+
   function renderLists() {
     const target = el("saved-lists"); target.replaceChildren();
+    el("list-ai-note").textContent = window.SpellAI?.isEnabled()
+      ? "New words get a meaning, three examples and a pronunciation guide automatically."
+      : "Turn on AI words in Settings and new words get a meaning, three examples and a pronunciation guide automatically.";
     const lists = SpellLearning.lists();
     if (!lists.length) target.append(node("p", "word-list-empty", "Your first collection starts with a few words. Paste them above."));
     for (const list of lists) {
@@ -15,7 +85,17 @@
       card.append(node("h3", "", list.name), node("p", "settings-note", `${list.entries.length} ${list.entries.length === 1 ? "word" : "words"} · ${list.entries.slice(0, 5).map(w => w.word).join(", ")}${list.entries.length > 5 ? "…" : ""}`));
       card.append(button("Practise this list", () => app.start(SpellLearning.seededOrder(list.entries, crypto.randomUUID()), { kind: "custom", title: list.name }), "btn btn-primary"));
       const actions = node("div", "compact-actions");
-      actions.append(button("Edit", () => {
+      const details = node("div", "word-details hidden");
+      const showWords = open => {
+        if (open && !details.childElementCount) details.append(...list.entries.map(wordDetail));
+        details.classList.toggle("hidden", !open);
+        read.textContent = open ? "Hide words" : "Read words";
+        read.setAttribute("aria-expanded", String(open));
+        open ? openLists.add(list.id) : openLists.delete(list.id);
+      };
+      const read = button("Read words", () => showWords(details.classList.contains("hidden")));
+      showWords(openLists.has(list.id));
+      actions.append(read, button("Edit", () => {
         editing = list.id; el("list-form-title").textContent = "Edit word list";
         el("list-name").value = list.name;
         el("list-words").value = list.entries.map(w => [w.word, w.hint || "", w.syllables || ""].join(" | ").replace(/(?: \| )+$/, "")).join("\n");
@@ -24,7 +104,14 @@
         if (!confirm(`Delete “${list.name}”? Your spelling progress and notebook will stay saved.`)) return;
         SpellLearning.deleteList(list.id); if (editing === list.id) clearForm(); renderLists();
       }));
-      card.append(actions); target.append(card);
+      card.append(actions);
+      const missing = window.SpellAI?.isEnabled() ? list.entries.filter(SpellWordInfo.needsDetails).length : 0;
+      if (missing) {
+        const ai = button(`Add details with AI (${missing} ${missing === 1 ? "word" : "words"})`, () => addDetailsWithAI(list, ai));
+        ai.title = "Fills in meanings, examples and pronunciation the words don't have yet. Uses your AI key.";
+        card.append(ai);
+      }
+      card.append(details); target.append(card);
     }
   }
   function clearForm() { editing = null; el("list-form").reset(); el("list-form-title").textContent = "Make a word list"; el("btn-cancel-list").classList.add("hidden"); }
@@ -105,7 +192,18 @@
       e.preventDefault();
       const parsed = SpellLearning.parseWords(el("list-words").value);
       if (parsed.errors.length) { el("list-status").textContent = parsed.errors.join("\n"); return; }
-      try { SpellLearning.saveList(editing, el("list-name").value, parsed.entries); clearForm(); renderLists(); el("list-status").textContent = `Saved ${parsed.entries.length} words.`; }
+      // Editing rebuilds each word from the text box, which only holds its definition and syllables.
+      const before = new Map((SpellLearning.lists().find(l => l.id === editing)?.entries || []).map(e => [e.word, e]));
+      const entries = parsed.entries.map(e => SpellWordInfo.keepDetails(before.get(e.word), e));
+      try {
+        const listId = SpellLearning.saveList(editing, el("list-name").value, entries);
+        clearForm(); renderLists();
+        const saved = `Saved ${parsed.entries.length} words. `;
+        el("list-status").textContent = saved;
+        // New words get their meaning, examples and pronunciation automatically when the AI is on.
+        const list = SpellLearning.lists().find(l => l.id === listId);
+        if (list && window.SpellAI?.isEnabled() && list.entries.some(SpellWordInfo.needsDetails)) addDetailsWithAI(list, null, saved);
+      }
       catch (error) { el("list-status").textContent = error.message; }
     });
     el("btn-proofread").addEventListener("click", () => app.start(SpellLearning.seededOrder(PROOFREAD_WORDS, crypto.randomUUID()).map(app.variant), { kind: "proofread", title: "Spot the mistake" }));

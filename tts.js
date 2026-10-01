@@ -96,38 +96,70 @@
     return url;
   }
 
-  let currentAudio = null;
+  // One <audio> element is reused for every word. iOS Safari and Chrome only let an element play
+  // if it was first started by a tap, and a fresh `new Audio(url)` created after the network
+  // fetch has lost that tap. unlock() plays a silent clip on the first gesture so later words can play.
+  const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  let audio = null;
+  let unlocked = false;
   let playbackId = 0;
   let settlePlayback = null;
+  let lastError = "";
+
+  function getAudio() {
+    if (!audio) audio = new Audio();
+    return audio;
+  }
+
+  function unlock() {
+    if (unlocked) return;
+    unlocked = true;
+    try {
+      const el = getAudio();
+      el.src = SILENT_WAV;
+      el.play().catch(() => { unlocked = false; });
+    } catch (e) { unlocked = false; }
+  }
 
   function stop() {
     playbackId += 1;
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio = null;
-    }
+    if (audio) audio.pause();
     if (settlePlayback) {
       settlePlayback();
       settlePlayback = null;
     }
   }
 
+  async function play(url, requestId) {
+    const el = getAudio();
+    el.src = url;
+    await new Promise((resolve, reject) => {
+      settlePlayback = resolve;
+      el.onended = resolve;
+      el.onerror = () => reject(new Error("Audio playback failed"));
+      el.play().catch(reject);
+    });
+    if (requestId === playbackId) settlePlayback = null;
+  }
+
+  // Plays any audio URL (used by the offline natural voice) through the same unlocked element.
+  function playUrl(url) {
+    stop();
+    return play(url, playbackId);
+  }
+
   async function speak(text) {
     stop();
     const requestId = playbackId;
-    const url = await fetchAudioUrl(text);
-    if (requestId !== playbackId) return;
-    const audio = new Audio(url);
-    currentAudio = audio;
-    await new Promise((resolve, reject) => {
-      settlePlayback = resolve;
-      audio.onended = resolve;
-      audio.onerror = () => reject(new Error("Audio playback failed"));
-      audio.play().catch(reject);
-    });
-    if (requestId === playbackId) {
-      currentAudio = null;
-      settlePlayback = null;
+    try {
+      const url = await fetchAudioUrl(text);
+      if (requestId !== playbackId) return;
+      await play(url, requestId);
+      lastError = "";
+    } catch (err) {
+      // Remembered so Settings can say why the app fell back to the device voice.
+      if (requestId === playbackId) lastError = err.message || String(err);
+      throw err;
     }
   }
 
@@ -137,7 +169,10 @@
     isEnabled,
     listVoices,
     speak,
+    playUrl,
     stop,
+    unlock,
+    get lastError() { return lastError; },
     DEFAULT_VOICE_ID,
     DEFAULT_VOICE_NAME,
   };

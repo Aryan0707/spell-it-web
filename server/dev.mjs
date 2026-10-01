@@ -17,7 +17,7 @@ const DB = { prepare(sql) { return { bind(...values) { const statement = databas
   first: async () => statement.get(...values) || null,
   run: async () => ({ meta: { changes: Number(statement.run(...values).changes) } }),
 }; } }; } };
-const publicFiles = new Set(["index.html", "style.css", "coach.css", "app.js", "words.js", "ai.js", "tts.js", "sfx.js", "pronounce.js", "delight.js", "learning.js", "learning-ui.js", "coach.js", "sync.js", "practice-content.js", "sw.js", "manifest.json"]);
+const publicFiles = new Set(["index.html", "style.css", "coach.css", "app.js", "words.js", "ai.js", "tts.js", "sfx.js", "pronounce.js", "meanings.js", "neural-voice.js", "neural-voice-worker.js", "sounds.js", "word-info.js", "delight.js", "learning.js", "learning-ui.js", "coach.js", "sync.js", "practice-content.js", "srs.js", "sw.js", "manifest.json"]);
 const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml" };
 const ASSETS = { async fetch(request) {
   const pathname = new URL(request.url).pathname;

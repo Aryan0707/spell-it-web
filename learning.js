@@ -230,8 +230,12 @@
     function str(value, max) { if (typeof value !== "string" || value.length > max) throw new Error("The backup contains invalid text."); }
     function word(value) { if (typeof value !== "string" || !wordPattern.test(value)) throw new Error("The backup contains an invalid word."); }
     function entry(e) {
-      object(e, ["word", "hint", "syllables", "difficulty", "category", "rule", "variants", "sentence", "memoryTip"]); word(e.word);
-      for (const k of ["hint", "sentence", "syllables", "difficulty", "category", "rule", "memoryTip"]) if (e[k] !== undefined) str(e[k], 500);
+      object(e, ["word", "hint", "syllables", "difficulty", "category", "rule", "variants", "sentence", "memoryTip", "examples", "meaning", "sounds"]); word(e.word);
+      for (const k of ["hint", "sentence", "syllables", "difficulty", "category", "rule", "memoryTip", "meaning", "sounds"]) if (e[k] !== undefined) str(e[k], 500);
+      if (e.examples !== undefined) {
+        if (!Array.isArray(e.examples) || e.examples.length > 3) throw new Error("The backup contains invalid data.");
+        e.examples.forEach((x) => str(x, 200));
+      }
       if (e.variants) { object(e.variants); for (const v of Object.values(e.variants)) word(v); }
     }
     object(raw, ["format", "version", "progress", "learning", "coach", "exportedAt"]);

@@ -118,3 +118,22 @@ test('backup validation rejects malformed, unsafe and credential-bearing data', 
     assert.throws(() => api.validateSnapshot(value));
   }
 });
+
+test('backups keep AI study-card extras and still reject malformed or unknown entry fields', () => {
+  const { api } = setup();
+  const withEntry = entry => {
+    const snap = clone(api.snapshot(progress()));
+    snap.learning.notebook.fern = { word: 'fern', entry, attempts: [], note: '', noteAt: 0, updatedAt: 1 };
+    return snap;
+  };
+  const extras = { word: 'fern', hint: 'A leafy plant', examples: ['A {word} grew here.'], meaning: 'noun | A green plant. | plant', sounds: 'fern | FURN | /fɝn/' };
+  api.validateSnapshot(withEntry(extras));
+  for (const bad of [
+    { ...extras, examples: 'not a list' },
+    { ...extras, examples: ['a', 'b', 'c', 'd'] },
+    { ...extras, examples: ['x'.repeat(201)] },
+    { ...extras, meaning: 'x'.repeat(501) },
+    { ...extras, sounds: { not: 'a string' } },
+    { ...extras, apiKey: 'sk-secret' },
+  ]) assert.throws(() => api.validateSnapshot(withEntry(bad)), /invalid/i, JSON.stringify(bad).slice(0, 60));
+});

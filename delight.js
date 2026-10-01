@@ -336,8 +336,10 @@
     if (hear && !hear._wired) {
       hear._wired = true;
       hear.addEventListener("click", () => {
-        if (window.SpellTTS && typeof window.SpellTTS.speak === "function") {
-          window.SpellTTS.speak(entry.word);
+        // SpellSpeech picks ElevenLabs when it is configured and falls back to the device voice.
+        // Calling SpellTTS directly rejected whenever no ElevenLabs key was set, so nothing was heard.
+        if (window.SpellSpeech) {
+          window.SpellSpeech.speak(entry.word);
         } else if (window.speechSynthesis) {
           const u = new SpeechSynthesisUtterance(entry.word);
           window.speechSynthesis.speak(u);

@@ -77,6 +77,12 @@
     studyOverlay: el("study-overlay"),
     studyWord: el("study-word"),
     studyHint: el("study-hint"),
+    studyMeaning: el("study-meaning"),
+    studyPos: el("study-pos"),
+    studyDef: el("study-def"),
+    studyRelated: el("study-related"),
+    studyExamplesWrap: el("study-examples-wrap"),
+    studyExamples: el("study-examples"),
     btnStudyListen: el("btn-study-listen"),
     btnTypedListen: el("btn-typed-listen"),
     btnStudyReady: el("btn-study-ready"),
@@ -86,6 +92,14 @@
     btnLoadElevenlabsVoices: el("btn-load-elevenlabs-voices"),
     elevenlabsStatus: el("elevenlabs-status"),
     btnTestElevenlabs: el("btn-test-elevenlabs"),
+    inputToggleNeural: el("input-toggle-neural"),
+    inputNeuralVoice: el("input-neural-voice"),
+    neuralFields: el("neural-fields"),
+    neuralProgress: el("neural-progress"),
+    neuralProgressFill: el("neural-progress-fill"),
+    neuralStatus: el("neural-status"),
+    btnTestNeural: el("btn-test-neural"),
+    btnNeuralAll: el("btn-neural-all"),
     inputToggleSound: el("input-toggle-sound"),
     inputToggleHaptic: el("input-toggle-haptic"),
     inputToggleTheme: el("input-toggle-theme"),
@@ -416,48 +430,117 @@
       const saved = voices.find((v) => v.name === savedName);
       if (saved) return saved;
     }
-    for (const name of PREFERRED_VOICE_NAMES) {
-      const match = voices.find((v) => v.name === name);
-      if (match) return match;
-    }
-    const nonNovelty = voices.filter((v) => !NOVELTY_VOICES.has(v.name));
-    return nonNovelty[0] || voices[0];
+    // Highest score wins; the sort is stable, so equal scores keep the browser's own order.
+    return voices.slice().sort((a, b) => voiceScore(b) - voiceScore(a))[0];
   }
 
-  function speakDevice(text) {
+  // Free quality boost: the device's neural/premium voices sound far less robotic than its
+  // default ones, but are rarely first in the list. Rank them ahead of the named favourites.
+  function voiceScore(v) {
+    if (NOVELTY_VOICES.has(v.name)) return -1;
+    let score = 0;
+    const tier = [/premium/i, /enhanced/i, /natural|neural/i].findIndex((re) => re.test(v.name));
+    if (tier >= 0) score = 100 - tier * 10;                    // premium > enhanced > natural/neural
+    else if (/online/i.test(v.name) || v.localService === false) score = 60; // cloud voices (Edge, Google)
+    else {
+      const favourite = PREFERRED_VOICE_NAMES.indexOf(v.name);
+      if (favourite >= 0) score = 50 - favourite;
+    }
+    const wanted = spellingStyle === "uk" ? "en-gb" : "en-us";
+    return v.lang && v.lang.toLowerCase().replace("_", "-") === wanted ? score + 5 : score;
+  }
+
+  let deviceUtterance = null; // also keeps a reference: Chrome can garbage-collect a playing utterance and never fire onend
+  let deviceSpeechToken = 0;
+
+  function speakDevice(text, isRetry = false) {
     if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    const voice = pickBestVoice();
-    if (voice) {
-      utter.voice = voice;
-      utter.lang = voice.lang;
+    const synth = window.speechSynthesis;
+    const token = ++deviceSpeechToken;
+    const start = () => {
+      if (token !== deviceSpeechToken) return; // a newer request replaced this one
+      const utter = new SpeechSynthesisUtterance(text);
+      const voice = pickBestVoice();
+      if (voice) {
+        utter.voice = voice;
+        utter.lang = voice.lang;
+      } else {
+        utter.lang = spellingStyle === "uk" ? "en-GB" : "en-US";
+      }
+      utter.rate = 0.95;
+      utter.pitch = 1.0;
+      let started = false;
+      utter.onstart = () => { started = true; };
+      utter.onend = () => { if (deviceUtterance === utter) setSpeechButtonsSpeaking(false); };
+      utter.onerror = (e) => {
+        if (e.error === "interrupted" || e.error === "canceled") return; // we cancelled it ourselves
+        console.warn("Device speech failed:", e.error);
+        if (deviceUtterance === utter) setSpeechButtonsSpeaking(false);
+      };
+      deviceUtterance = utter;
+      setSpeechButtonsSpeaking(true);
+      synth.speak(utter);
+      // A wedged engine (a Chrome/Safari quirk) queues the utterance but never starts it.
+      // Reset it and try once more; if that fails too, stop showing the speaking state.
+      setTimeout(() => {
+        if (started || deviceUtterance !== utter) return;
+        if (isRetry) { setSpeechButtonsSpeaking(false); return; }
+        synth.cancel();
+        speakDevice(text, true);
+      }, 2500);
+    };
+    // Chrome drops an utterance spoken in the same tick as cancel(), so wait a moment after one.
+    // Not cancelling an idle engine keeps the speech inside the tap that triggered it, which iOS requires.
+    if (synth.speaking || synth.pending) {
+      synth.cancel();
+      setTimeout(start, 60);
     } else {
-      utter.lang = "en-US";
+      start();
     }
-    utter.rate = 0.95;
-    utter.pitch = 1.0;
-    setSpeechButtonsSpeaking(true);
-    utter.onend = () => setSpeechButtonsSpeaking(false);
-    utter.onerror = () => setSpeechButtonsSpeaking(false);
-    window.speechSynthesis.speak(utter);
   }
 
+  // iOS Safari and Chrome only allow speech and audio that begin with a tap, but words are spoken on a
+  // timer after the tap (and, for ElevenLabs, after a download). Prime both engines on the first gesture.
+  function unlockSpeech() {
+    for (const type of ["pointerdown", "keydown"]) document.removeEventListener(type, unlockSpeech, true);
+    try {
+      if ("speechSynthesis" in window) {
+        const silent = new SpeechSynthesisUtterance(" ");
+        silent.volume = 0;
+        window.speechSynthesis.speak(silent);
+      }
+    } catch (e) { /* speech unavailable; nothing to prime */ }
+    window.SpellTTS?.unlock?.();
+  }
+  for (const type of ["pointerdown", "keydown"]) document.addEventListener(type, unlockSpeech, true);
+
+  // Voice priority: ElevenLabs (the learner's own paid key), then the free natural voice, then the
+  // device voice. Any engine that fails, or is not ready yet, hands that one word to the next.
   function speak(text) {
     const requestId = ++speechRequestId;
-    if (window.SpellTTS && SpellTTS.isEnabled()) {
-      setSpeechButtonsSpeaking(true);
-      SpellTTS.speak(text)
-        .then(() => { if (requestId === speechRequestId) setSpeechButtonsSpeaking(false); })
-        .catch((err) => {
-          if (requestId !== speechRequestId) return;
-          console.warn("ElevenLabs speech failed, falling back to device voice:", err);
-          setSpeechButtonsSpeaking(false);
-          speakDevice(text);
-        });
-    } else {
+    const engine = window.SpellTTS && SpellTTS.isEnabled()
+      ? { name: "ElevenLabs", run: () => SpellTTS.speak(text) }
+      : window.SpellNeural && SpellNeural.isEnabled()
+        ? { name: "Natural voice", run: () => SpellNeural.speak(text, { timeoutMs: 4000 }) }
+        : null;
+    if (!engine) {
       speakDevice(text);
+      return;
     }
+    setSpeechButtonsSpeaking(true);
+    engine.run()
+      .then(() => { if (requestId === speechRequestId) setSpeechButtonsSpeaking(false); })
+      .catch((err) => {
+        if (requestId !== speechRequestId) return;
+        console.warn(`${engine.name} speech unavailable, falling back to device voice:`, err);
+        setSpeechButtonsSpeaking(false);
+        speakDevice(text);
+      });
+  }
+
+  // Have the natural voice prepare words before the learner reaches them.
+  function prefetchVoices(entries) {
+    if (window.SpellNeural && SpellNeural.isEnabled()) SpellNeural.prefetch(entries.map((e) => e.word));
   }
 
   function populateVoiceSelect() {
@@ -564,9 +647,11 @@
   // ---------- spelling style: American vs British ----------
   const SPELLING_STYLE_KEY = "spellit_spelling_style";
   let spellingStyle = localStorage.getItem(SPELLING_STYLE_KEY) === "uk" ? "uk" : "us";
+  window.SpellNeural?.setAccent(spellingStyle);
 
   function setSpellingStyle(style) {
     spellingStyle = style;
+    window.SpellNeural?.setAccent(style);
     localStorage.setItem(SPELLING_STYLE_KEY, style);
     for (const chip of ui.spellingStyleChips.querySelectorAll(".chip")) {
       chip.classList.toggle("active", chip.dataset.value === style);
@@ -887,6 +972,8 @@
     } else if (practiceMode === "read" && !session.forceListen) {
       ui.studyWord.textContent = entry.word.toUpperCase();
       ui.studyHint.textContent = entry.hint || "";
+      renderStudyMeaning(entry);
+      renderStudyExamples(entry);
       ui.studyOverlay.classList.add("show");
       window.SpellPronounce?.mount(el("pronounce-coach"), entry, { speak });
     } else {
@@ -894,6 +981,43 @@
       afterRoundDelay(() => speak(entry.word), 350);
       if (answerMode() === "type") afterRoundDelay(() => ui.typedInput.focus(), 400);
       if (timedMode && !isLearningLesson()) startRoundTimer();
+    }
+  }
+
+  // Built-in words have a part of speech, definition and related words in meanings.js. It takes the
+  // place of the one-line hint on the study card; custom-list and AI words keep showing their hint.
+  function renderStudyMeaning(entry) {
+    const meaning = window.SpellMeanings?.forEntry(entry);
+    ui.studyMeaning.classList.toggle("hidden", !meaning);
+    ui.studyHint.classList.toggle("hidden", !!meaning);
+    if (!meaning) return;
+    ui.studyPos.textContent = meaning.pos;
+    ui.studyDef.textContent = meaning.definition;
+    ui.studyRelated.textContent = meaning.related.length ? `Related: ${meaning.related.join(" · ")}` : "";
+    ui.studyRelated.classList.toggle("hidden", !meaning.related.length);
+  }
+
+  // Built-in words have three example sentences in WORD_EXAMPLES, keyed by the US spelling.
+  // Custom-list and AI words have none, so the section stays hidden for them.
+  // AI words carry their own examples on the entry; the hand-written table wins when a word is in both.
+  function examplesFor(entry) {
+    return window.SpellWordInfo.examplesOf(entry);
+  }
+
+  function renderStudyExamples(entry) {
+    const sentences = entry ? examplesFor(entry) : [];
+    ui.studyExamples.replaceChildren();
+    ui.studyExamplesWrap.classList.toggle("hidden", !sentences.length);
+    for (const sentence of sentences) {
+      const li = document.createElement("li");
+      const spoken = SpellWordInfo.sentenceText(sentence, entry.word);
+      li.append(...SpellWordInfo.sentenceNodes(sentence, entry.word),
+        SpellWordInfo.listenButton("Listen to this example", () => speak(spoken)));
+      ui.studyExamples.append(li);
+    }
+    // Have the natural voice ready before the learner presses a speaker button.
+    if (sentences.length && window.SpellNeural && SpellNeural.isEnabled()) {
+      SpellNeural.prefetch(sentences.map((s) => SpellWordInfo.sentenceText(s, entry.word)));
     }
   }
 
@@ -911,6 +1035,7 @@
     // Remove the model spelling from the hidden card before recall.
     if (isLearningLesson()) {
       ui.studyWord.textContent = "";
+      renderStudyExamples(null);
       el("study-copy").value = "";
       ui.typedInput.value = "";
       speak(round.entry.word);
@@ -930,6 +1055,8 @@
     const entry = round.entry;
     ui.studyWord.textContent = entry.word.toUpperCase();
     ui.studyHint.textContent = entry.hint || "Listen to the word, then look closely at its letters.";
+    renderStudyMeaning(entry);
+    renderStudyExamples(entry);
     ui.studyRuleTipText.textContent = entry.memoryTip || window.SpellCoach.getMnemonic(entry.word, entry);
     ui.studyRuleTip.classList.add("show");
     el("study-heading").textContent = "Let's learn this word";
@@ -1431,6 +1558,7 @@
       returnPath: options.returnPath,
     };
     const startedSession = session;
+    if (reviewWords) prefetchVoices(reviewWords);
     data.curStreak = 0;
     saveData();
     ui.curStreak.textContent = 0;
@@ -1444,6 +1572,7 @@
       const plan = window.SpellCoach.planSession(SESSION_LENGTH, data, WORD_LIST, applyVariant);
       session.reviewWords = plan.entries;
       session.length = plan.entries.length;
+      prefetchVoices(plan.entries);
       session.kind = "practice";
       ui.loadingOverlay.classList.remove("show");
       showScreen("game");
@@ -1462,6 +1591,7 @@
           if (session !== startedSession || !session.active) return;
           session.aiWords = words;
           session.aiIndex = 0;
+          prefetchVoices(words);
           ui.loadingOverlay.classList.remove("show");
           showScreen("game");
           startRound();
@@ -1653,10 +1783,122 @@
     ui.inputToggleElevenlabs.checked = !!ttsCfg.useElevenLabs;
     ui.inputElevenlabsKey.value = ttsCfg.apiKey || "";
     ui.inputElevenlabsVoice.innerHTML = `<option value="${ttsCfg.voiceId || SpellTTS.DEFAULT_VOICE_ID}">${ttsCfg.voiceName || SpellTTS.DEFAULT_VOICE_NAME}</option>`;
+    if (window.SpellNeural) {
+      ui.inputNeuralVoice.value = SpellNeural.loadConfig().voice;
+      renderNeuralSettings();
+      refreshNeuralSaved();
+    }
     ui.elevenlabsStatus.textContent = "";
     ui.elevenlabsStatus.className = "settings-status";
+    if (ttsCfg.useElevenLabs && SpellTTS.lastError) {
+      ui.elevenlabsStatus.textContent = "Last ElevenLabs request failed, so the device voice was used: " + SpellTTS.lastError;
+      ui.elevenlabsStatus.className = "settings-status err";
+    }
 
     showScreen("settings");
+  }
+
+  // ---------- natural offline voice (settings) ----------
+  let neuralBulk = null; // { done, total } while "Save every word" is running
+  let neuralSaved = null; // how many built-in words are stored on this device, once counted
+
+  const neuralWordTexts = () => WORD_LIST.map((w) => (spellingStyle === "uk" && w.variants && w.variants.uk) || w.word);
+
+  function renderNeuralSettings() {
+    const N = window.SpellNeural;
+    if (!N) return;
+    const cfg = N.loadConfig();
+    const st = N.getState();
+    ui.inputToggleNeural.checked = cfg.enabled;
+    ui.neuralFields.classList.toggle("hidden", !cfg.enabled);
+    let text;
+    let bad = false;
+    if (!st.supported) {
+      text = "This browser can't run the natural voice, so the device voice will be used.";
+      bad = true;
+    } else if (neuralBulk) {
+      text = `Saving word voices… ${neuralBulk.done} of ${neuralBulk.total}`;
+    } else if (st.state === "loading") {
+      text = st.progress ? `Downloading the voice… ${Math.round(st.progress * 100)}%` : "Starting the voice engine…";
+    } else if (st.state === "ready") {
+      text = "Ready. Words are prepared in the background and saved on this device.";
+      if (neuralSaved !== null) text += ` ${neuralSaved} of ${WORD_LIST.length} built-in words saved.`;
+    } else if (st.state === "error") {
+      text = "Couldn't load the voice: " + st.error;
+      bad = true;
+    } else {
+      text = "Loads when you start practising. Tap “Download & test voice” to load it now.";
+    }
+    ui.neuralStatus.textContent = text;
+    ui.neuralStatus.className = "settings-status" + (bad ? " err" : st.state === "ready" ? " ok" : "");
+    const downloading = st.state === "loading" && st.progress > 0;
+    ui.neuralProgress.classList.toggle("hidden", !downloading && !neuralBulk);
+    const fraction = neuralBulk ? neuralBulk.done / (neuralBulk.total || 1) : st.progress;
+    ui.neuralProgressFill.style.width = `${Math.round(fraction * 100)}%`;
+    ui.btnNeuralAll.textContent = neuralBulk ? "Stop saving" : "Save every word for offline";
+    ui.btnTestNeural.disabled = !st.supported;
+    ui.btnNeuralAll.disabled = !st.supported;
+  }
+
+  function refreshNeuralSaved() {
+    if (!window.SpellNeural || !SpellNeural.isReady()) return;
+    SpellNeural.countStored(neuralWordTexts()).then((count) => { neuralSaved = count; renderNeuralSettings(); });
+  }
+
+  function setupNeuralSettings() {
+    const N = window.SpellNeural;
+    if (!N) return;
+    for (const v of N.VOICES) {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.label;
+      ui.inputNeuralVoice.appendChild(opt);
+    }
+    N.onChange((st) => {
+      if (st.state === "ready") refreshNeuralSaved();
+      if (screens.settings.classList.contains("active")) renderNeuralSettings();
+    });
+    ui.inputToggleNeural.addEventListener("change", () => {
+      N.saveConfig({ ...N.loadConfig(), enabled: ui.inputToggleNeural.checked });
+      if (ui.inputToggleNeural.checked) N.start(); else N.stop();
+      renderNeuralSettings();
+    });
+    ui.inputNeuralVoice.addEventListener("change", () => {
+      N.saveConfig({ ...N.loadConfig(), voice: ui.inputNeuralVoice.value });
+      neuralSaved = null;
+      refreshNeuralSaved();
+    });
+    ui.btnTestNeural.addEventListener("click", async () => {
+      ui.btnTestNeural.disabled = true;
+      ui.neuralStatus.textContent = "Preparing the voice…";
+      ui.neuralStatus.className = "settings-status";
+      try {
+        await N.whenReady();
+        ui.neuralStatus.textContent = "Speaking…";
+        await N.speak("This is how I sound when I say a word like umbrella.", { timeoutMs: 30000 });
+        renderNeuralSettings();
+      } catch (err) {
+        ui.neuralStatus.textContent = "Couldn't play the voice: " + err.message;
+        ui.neuralStatus.className = "settings-status err";
+      } finally {
+        ui.btnTestNeural.disabled = false;
+      }
+    });
+    ui.btnNeuralAll.addEventListener("click", async () => {
+      if (neuralBulk) { N.cancelPrefetch(); return; }
+      neuralBulk = { done: 0, total: WORD_LIST.length };
+      renderNeuralSettings();
+      try {
+        await N.prefetchAll(neuralWordTexts(), (done, total) => { neuralBulk = { done, total }; renderNeuralSettings(); });
+      } catch (err) {
+        ui.neuralStatus.textContent = "Couldn't save the words: " + err.message;
+        ui.neuralStatus.className = "settings-status err";
+      }
+      neuralBulk = null;
+      neuralSaved = null;
+      renderNeuralSettings();
+      refreshNeuralSaved();
+    });
   }
 
   function readSettingsForm() {
@@ -1999,6 +2241,7 @@
     localStorage.setItem(VOICE_KEY, ui.inputVoice.value);
     speakDevice("This is how I sound when I say a word like umbrella.");
   });
+  setupNeuralSettings();
   ui.btnLoadElevenlabsVoices.addEventListener("click", loadElevenLabsVoices);
   ui.btnTestElevenlabs.addEventListener("click", testElevenLabsVoice);
 
@@ -2081,9 +2324,12 @@
     // No more capture-phase interception on the main start button — that would break
     // existing tests and review/due flows that pre-seed localStorage without coach state.
   }
+  window.SpellSpeech = { speak };
   SpellFeatures.init({
     progress: () => data,
     variant: applyVariant,
+    speak,
+    style: () => spellingStyle,
     show: showScreen,
     start: startSession,
     isBusy: () => session.active,

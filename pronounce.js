@@ -1,5 +1,6 @@
-// Pronounce coach: slow syllables, sound-out with letter highlight,
-// say-it-back via SpeechRecognition, and optional AI pronunciation feedback.
+// Pronounce coach: sound guide (syllables, stress, respelling, IPA), slow syllables,
+// sound-out with letter highlight, say-it-back via SpeechRecognition, and optional AI
+// pronunciation feedback.
 // Mounts into the study overlay for the current word.
 (() => {
   "use strict";
@@ -7,12 +8,33 @@
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const hasMic = !!SR;
 
-  function splitSyllables(entry) {
+  // Each chunk has a `label` (what the learner sees) and `audio` (what the voice says).
+  // With a sound guide the audio is the respelling part ("lee"), because reading the written
+  // chunk aloud gives the wrong sound ("ly" -> "lie"). Words without a guide (custom lists,
+  // AI words) keep the old behaviour: saved syllables if they match, else rough 3-letter groups.
+  function buildChunks(entry, guide) {
+    const word = entry.word.toLowerCase();
+    if (guide) {
+      const spelledAsGuide = guide.syllables.join("") === word;
+      return guide.syllables.map((syl, i) => ({
+        label: spelledAsGuide ? syl : guide.say[i].toLowerCase(), // British spellings: show the sound
+        audio: guide.say[i].toLowerCase(),
+        stressed: i === guide.stress,
+      }));
+    }
     const raw = (entry.syllables || "").toLowerCase();
-    const joined = raw.replace(/-/g, "");
-    if (raw && joined === entry.word.toLowerCase()) return raw.split("-");
-    // fallback: rough 2–3 letter groups so the UI still works
-    return entry.word.match(/.{1,3}/g) || [entry.word];
+    const parts = raw && raw.replace(/-/g, "") === word ? raw.split("-") : (entry.word.match(/.{1,3}/g) || [entry.word]);
+    return parts.map((p) => ({ label: p, audio: p, stressed: false }));
+  }
+
+  // "def-uh-NIT-lee" with the stressed part picked out.
+  function renderRespelling(guide) {
+    const row = h("div", { class: "pc-say", "aria-label": `Sounds like ${guide.say.join(" ").toLowerCase()}` });
+    guide.say.forEach((part, i) => {
+      if (i) row.append(h("span", { class: "pc-sep", "aria-hidden": "true" }, "·"));
+      row.append(h("span", { class: i === guide.stress ? "pc-part pc-stress" : "pc-part" }, part.toLowerCase()));
+    });
+    return row;
   }
 
   function h(tag, attrs = {}, ...kids) {
@@ -82,8 +104,11 @@
     container.replaceChildren();
 
     const speak = deps?.speak || (t => (window.SpellTTS?.isEnabled() ? SpellTTS.speak(t) : Promise.resolve()));
-    const syllables = splitSyllables(entry);
+    const guide = window.SpellSounds?.forEntry(entry);
+    const chunks = buildChunks(entry, guide);
     const target = normalise(entry.word);
+    // Real syllable sounds are worth preparing; the rough letter chunks used without a guide are not.
+    window.SpellNeural?.prefetch([entry.word, ...(guide ? chunks.map((c) => c.audio) : [])]);
 
     // -- Header --
     const eyebrow = h("div", { class: "pc-eyebrow" }, "Pronounce coach");
@@ -97,11 +122,28 @@
 
     // -- Syllable chips (tap each to hear that chunk) --
     const chipRow = h("div", { class: "pc-chips" });
-    for (const chunk of syllables) {
+    for (const chunk of chunks) {
       chipRow.append(h("button", {
-        class: "pc-chip", type: "button",
-        on: { click: () => playChunk(chunk, speak) },
-      }, chunk));
+        class: chunk.stressed ? "pc-chip pc-chip-stress" : "pc-chip", type: "button",
+        title: chunk.stressed ? "Stressed syllable: say this part loudest" : null,
+        on: { click: () => playChunk(chunk.audio, speak) },
+      }, chunk.label));
+    }
+
+    // -- Sound guide: respelling, IPA and the one thing the spelling hides --
+    let guideBlock = null;
+    if (guide) {
+      guideBlock = h("div", { class: "pc-guide" },
+        h("div", { class: "pc-guide-row" },
+          h("span", { class: "pc-guide-label" }, "Sounds like"), renderRespelling(guide)),
+        h("div", { class: "pc-guide-row" },
+          h("span", { class: "pc-guide-label" }, "IPA"), h("span", { class: "pc-ipa" }, guide.ipa),
+          h("span", {
+            class: "pc-accent",
+            title: guide.source === "ai" ? "Written by AI, so it may contain mistakes" : "General American pronunciation",
+          }, guide.source === "ai" ? "AI" : "US")),
+        guide.note ? h("div", { class: "pc-guide-note" }, guide.note) : null,
+      );
     }
 
     // -- Sound-out: highlight each letter as the word is said --
@@ -123,8 +165,8 @@
     const slowBtn = h("button", {
       class: "pc-btn", type: "button",
       on: { click: async () => {
-        for (const chunk of syllables) {
-          await playChunk(chunk, speak);
+        for (const chunk of chunks) {
+          await playChunk(chunk.audio, speak);
           await new Promise(r => setTimeout(r, 220));
         }
       } },
@@ -196,7 +238,7 @@
       actions.append(h("span", { class: "pc-note" }, "Say-it-back needs Chrome or Safari."));
     }
 
-    container.append(eyebrow, wordRow, chipRow, actions, feedback);
+    container.append(...[eyebrow, wordRow, chipRow, guideBlock, actions, feedback].filter(Boolean));
 
     return function unmount() {
       try { recognition?.abort?.(); } catch (e) {}
