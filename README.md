@@ -47,7 +47,9 @@ A built-in coach personalises every practice session and tracks your progress:
 - **Adaptive levelling:** your level adjusts automatically based on first-attempt unassisted answers. Consistently high accuracy moves you up; sustained difficulty moves you down.
 - **Mistake feedback:** every wrong answer shows a word-specific mnemonic tip — curated for 30+ common tricky words, with an honest fallback for others. The visual diff highlights exactly which characters you got right, wrong, or missed.
 - **Same-day mastery protection:** you must recall a word correctly on different calendar days before it advances toward mastery. Repeating the same word several times in one sitting preserves your existing progress fairly — no inflating mastery counts.
-- **Progress tracking:** home screen shows your level, first-try accuracy percentage, words recalled on later days, words mastered, and weak spelling patterns. Empty states suggest a concrete action rather than a bland "nothing here."
+- **Learned, then Mastered:** a word is **Learned** after clean recalls on three different days. It is **Mastered** only when its review interval has also reached 21 days, which takes four spaced recalls: the word was remembered after an 8-day gap and is now scheduled three weeks out. Both thresholds, and the checks for them, live in `srs.js`. The home ring counts Learned words; Progress shows both, with a badge on each word.
+- **Near-misses are gentler than blanks:** if every wrong attempt on a word of five or more letters was a single slip (a missing, extra or wrong letter, or two neighbouring letters swapped, like *recieve*) and no hint was used, the word keeps half its recalls, loses less ease and is due again tomorrow. Anything else, including hints, timeouts and skips, resets the word and makes it due immediately.
+- **Progress tracking:** home screen shows your level, first-try accuracy percentage, words recalled on later days, words learned and mastered, and weak spelling patterns. Empty states suggest a concrete action rather than a bland "nothing here."
 
 ## AI word lab
 

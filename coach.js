@@ -1,5 +1,5 @@
 // Spell Coach: personalised session planning, adaptive levelling, mistake feedback,
-// same-day mastery protection, and progress analytics. Load after words.js, before app.js.
+// same-day mastery protection, and progress analytics. Load after words.js and srs.js, before app.js.
 (() => {
   "use strict";
 
@@ -181,7 +181,7 @@
     if (entries.length < sessionLength) {
       const mastered = new Set(
         Object.entries(progress.srs || {})
-          .filter(([, rec]) => rec.reps >= 3)
+          .filter(([, rec]) => window.SpellSRS.isLearned(rec))
           .map(([w]) => w)
       );
       const weakWords = Object.entries(progress.missed || {})
@@ -556,9 +556,10 @@
       }
     }
 
-    // Words mastered (reps >= 3)
-    const mastered = Object.values(srs || progress.srs || {})
-      .filter(rec => rec.reps >= 3).length;
+    // Two tiers, defined once in srs.js.
+    const records = Object.values(srs || progress.srs || {});
+    const learned = records.filter(window.SpellSRS.isLearned).length;
+    const mastered = records.filter(window.SpellSRS.isMastered).length;
 
     // Words practiced (ever appeared in SRS)
     const totalPracticed = Object.keys(srs || progress.srs || {}).length;
@@ -580,6 +581,7 @@
     return {
       firstTryAccuracy,
       recalledLater,
+      learned,
       mastered,
       totalPracticed,
       dueToday,

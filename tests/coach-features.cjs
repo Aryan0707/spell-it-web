@@ -19,7 +19,7 @@ function setup() {
     Event,
     Date,
   });
-  for (const file of ['words.js', 'practice-content.js', 'coach.js']) {
+  for (const file of ['words.js', 'practice-content.js', 'srs.js', 'coach.js']) {
     vm.runInContext(readFileSync(file, 'utf8'), context);
   }
   // Expose WORD_LIST on the context object for test access
@@ -163,6 +163,7 @@ test('coach stats return sensible values for new user', () => {
 
   assert.equal(stats.firstTryAccuracy, null, 'New user has no accuracy yet');
   assert.equal(stats.totalPracticed, 0, 'New user has practiced 0 words');
+  assert.equal(stats.learned, 0, 'New user has 0 learned');
   assert.equal(stats.mastered, 0, 'New user has 0 mastered');
   assert.equal(stats.isAssessed, false, 'New user is not assessed');
 });
@@ -193,7 +194,8 @@ test('coach stats after some practice with separate-day evidence', () => {
   assert.equal(stats.firstTryAccuracy, 67, 'First-try accuracy should be ~67%');
   // Cat: lastMasteryDates=yesterday, updatedAt=today => different day => recalledLater
   assert.equal(stats.recalledLater, 1, 'One word recalled on a later day (separate-day evidence)');
-  assert.equal(stats.mastered, 1, 'One word has 3 reps');
+  assert.equal(stats.learned, 1, 'One word has 3 reps');
+  assert.equal(stats.mastered, 0, 'A 3-day interval is learned, not yet mastered');
   assert.equal(stats.sessions, 3);
 });
 
@@ -292,4 +294,17 @@ test('curated mnemonics exist for common tricky words', () => {
     const mnemonic = api.getMnemonic(word, { word });
     assert.ok(mnemonic.length > 10, `"${word}" should have a meaningful mnemonic`);
   }
+});
+test('coach stats separate learned from mastered by review interval', () => {
+  const { api } = setup();
+  const p = progress({
+    srs: {
+      cat: { reps: 3, interval: 8, dueAt: Date.now() + 86400000 * 8, updatedAt: Date.now() },
+      dog: { reps: 4, interval: 21, dueAt: Date.now() + 86400000 * 21, updatedAt: Date.now() },
+      sun: { reps: 2, interval: 3, dueAt: Date.now() + 86400000 * 3, updatedAt: Date.now() },
+    },
+  });
+  const stats = api.getStats(p, p.srs);
+  assert.equal(stats.learned, 2, 'cat and dog are learned (3+ reps)');
+  assert.equal(stats.mastered, 1, 'only dog has a 21-day interval');
 });

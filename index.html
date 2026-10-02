@@ -9,10 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="Spell It" />
 <title>Spell It</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=35" />
-<link rel="icon" href="icons/favicon-32.png?v=35" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=35" />
-<link rel="stylesheet" href="coach.css?v=35" id="coach-css" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=36" />
+<link rel="icon" href="icons/favicon-32.png?v=36" sizes="32x32" />
+<link rel="stylesheet" href="style.css?v=36" />
+<link rel="stylesheet" href="coach.css?v=36" id="coach-css" />
 </head>
 <body>
 <div id="app">
@@ -24,7 +24,7 @@
       <!-- Top brand row -->
       <header class="home-header">
         <div class="home-brand">
-          <img class="logo-icon" src="icons/icon-192.png?v=35" alt="" />
+          <img class="logo-icon" src="icons/icon-192.png?v=36" alt="" />
           <span>Spell It</span>
         </div>
         <button class="icon-btn header-icon" id="btn-header-progress" aria-label="Your progress">
@@ -46,7 +46,7 @@
             </svg>
             <div class="hero-ring-inner">
               <strong id="stat-correct">0</strong>
-              <span>mastered</span>
+              <span>learned</span>
             </div>
           </div>
 
@@ -446,6 +446,10 @@
           <div class="stat-label">Best Streak</div>
         </div>
         <div class="stat-card">
+          <div class="stat-value" id="hist-learned">0</div>
+          <div class="stat-label">Learned</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-value" id="hist-mastered">0</div>
           <div class="stat-label">Mastered</div>
         </div>
@@ -459,7 +463,7 @@
       <div class="word-list" id="history-due-list"></div>
       <button class="btn btn-review hidden" id="btn-history-review">Review due words</button>
 
-      <div class="filter-label" style="margin-top: 26px;">Mastered Words</div>
+      <div class="filter-label" style="margin-top: 26px;">Learned &amp; Mastered Words</div>
       <div class="word-list" id="history-mastered-list"></div>
 
       <div class="filter-label" style="margin-top: 26px;">Weak Patterns</div>
@@ -488,12 +492,12 @@
         </div>
         <div class="stat-card">
           <div class="stat-value" id="summary-mastered">0</div>
-          <div class="stat-label">New Mastered</div>
+          <div class="stat-label">Milestones</div>
         </div>
       </div>
 
       <div id="summary-mastered-section" class="hidden">
-        <div class="filter-label" style="margin-top: 6px;">Newly Mastered</div>
+        <div class="filter-label" style="margin-top: 6px;">Newly Learned or Mastered</div>
         <div class="word-list" id="summary-mastered-list"></div>
       </div>
 
@@ -646,22 +650,22 @@
   </nav>
 
 </div>
-<script src="words.js?v=35"></script>
-<script src="ai.js?v=35"></script>
-<script src="tts.js?v=35"></script>
-<script src="neural-voice.js?v=35"></script>
-<script src="meanings.js?v=35"></script>
-<script src="sounds.js?v=35"></script>
-<script src="word-info.js?v=35"></script>
-<script src="pronounce.js?v=35"></script>
-<script src="sfx.js?v=35"></script>
-<script src="delight.js?v=35"></script>
-<script src="practice-content.js?v=35"></script>
-<script src="srs.js?v=35"></script>
-<script src="learning.js?v=35"></script>
-<script src="learning-ui.js?v=35"></script>
-<script src="coach.js?v=35"></script>
-<script src="sync.js?v=35"></script>
-<script src="app.js?v=35"></script>
+<script src="words.js?v=36"></script>
+<script src="ai.js?v=36"></script>
+<script src="tts.js?v=36"></script>
+<script src="neural-voice.js?v=36"></script>
+<script src="meanings.js?v=36"></script>
+<script src="sounds.js?v=36"></script>
+<script src="word-info.js?v=36"></script>
+<script src="pronounce.js?v=36"></script>
+<script src="sfx.js?v=36"></script>
+<script src="delight.js?v=36"></script>
+<script src="practice-content.js?v=36"></script>
+<script src="srs.js?v=36"></script>
+<script src="learning.js?v=36"></script>
+<script src="learning-ui.js?v=36"></script>
+<script src="coach.js?v=36"></script>
+<script src="sync.js?v=36"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>

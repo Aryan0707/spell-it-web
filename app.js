@@ -106,6 +106,7 @@
     btnHistory: el("btn-history"),
     btnHistoryBack: el("btn-history-back"),
     histBest: el("hist-best"),
+    histLearned: el("hist-learned"),
     histMastered: el("hist-mastered"),
     histSessions: el("hist-sessions"),
     historyDueList: el("history-due-list"),
@@ -155,7 +156,7 @@
 
   function updateHomeStats() {
     ui.statBest.textContent = data.bestStreak;
-    ui.statCorrect.textContent = countMastered();
+    ui.statCorrect.textContent = countLearned();
     ui.statDue.textContent = countDueToday();
     const due = getDueEntries().length;
     ui.btnReviewDue.classList.toggle("hidden", !due);
@@ -277,6 +278,12 @@
           <span class="coach-stat-value">${stats.recalledLater}</span>
         </div>`;
       }
+      if (stats.learned > 0) {
+        html += `<div class="coach-stat-row">
+          <span class="coach-stat-label">Words learned</span>
+          <span class="coach-stat-value">${stats.learned}</span>
+        </div>`;
+      }
       if (stats.mastered > 0) {
         html += `<div class="coach-stat-row">
           <span class="coach-stat-label">Words mastered</span>
@@ -285,7 +292,7 @@
       }
       if (stats.masteredToday > 0) {
         html += `<div class="coach-stat-row">
-          <span class="coach-stat-label">Mastered today</span>
+          <span class="coach-stat-label">Recalled today</span>
           <span class="coach-stat-value">${stats.masteredToday}</span>
         </div>`;
       }
@@ -317,7 +324,7 @@
       assistedCount: 0,
       totalCount: 0,
       bestStreakThisSession: 0,
-      masteredThisSession: [],
+      milestonesThisSession: [],
       missedWordsThisSession: new Set(),
       reviewWords: words,
       length: words.length,
@@ -344,11 +351,15 @@
   // ---------- spaced repetition (lightweight SRS) ----------
   // Pure scheduling logic lives in srs.js so it can be unit-tested.
   const SRS = window.SpellSRS;
-  const MASTERY_REPS = SRS.MASTERY_REPS;
 
   function countDueToday() {
     const now = Date.now();
     return Object.values(data.srs).filter((rec) => SRS.isDue(rec, now)).length;
+  }
+
+  // "Learned" is the early milestone and includes every mastered word.
+  function countLearned() {
+    return Object.values(data.srs).filter(SRS.isLearned).length;
   }
 
   function countMastered() {
@@ -365,6 +376,7 @@
     const next = SRS.schedule({
       rec: prev,
       wasClean,
+      nearMiss: !wasClean && !round.assisted && SRS.isNearMiss(word, round.attempts),
       now: Date.now(),
       word,
       canBumpMastery: canBump || undefined,
@@ -1322,10 +1334,11 @@
     }
     saveData();
 
-    const wasMasteredBefore = !!(data.srs[word] && data.srs[word].reps >= MASTERY_REPS);
+    const before = data.srs[word];
     updateSrsOnResult(word, independent);
-    const isMasteredNow = !!(data.srs[word] && data.srs[word].reps >= MASTERY_REPS);
-    if (!wasMasteredBefore && isMasteredNow) session.masteredThisSession.push(word);
+    const after = data.srs[word];
+    const reachedMilestone = (!SRS.isLearned(before) && SRS.isLearned(after)) || (!SRS.isMastered(before) && SRS.isMastered(after));
+    if (reachedMilestone && !session.milestonesThisSession.includes(word)) session.milestonesThisSession.push(word);
 
     // Record with coach for adaptive levelling
     if (window.SpellCoach && !session.kind.startsWith("review")) {
@@ -1543,7 +1556,7 @@
       assistedCount: 0,
       totalCount: 0,
       bestStreakThisSession: 0,
-      masteredThisSession: [],
+      milestonesThisSession: [],
       missedWordsThisSession: new Set(),
       reviewWords,
       length: reviewWords ? (options.fullLength ? reviewWords.length : Math.min(SESSION_LENGTH, reviewWords.length)) : SESSION_LENGTH,
@@ -1669,7 +1682,7 @@
       ui.summarySubtitle.textContent = `You're starting at ${levelName} (level ${level}). We'll adjust your level automatically as you practice.`;
       ui.summaryCorrect.textContent = `${correct}/${total}`;
       ui.summaryStreak.textContent = session.bestStreakThisSession;
-      ui.summaryMastered.textContent = session.masteredThisSession.length;
+      ui.summaryMastered.textContent = session.milestonesThisSession.length;
       el("summary-assistance").textContent = `${session.independentCount} independently · ${session.assistedCount} with hints`;
       ui.summaryMasteredSection.classList.add("hidden");
       ui.summaryReviewSection.classList.add("hidden");
@@ -1692,7 +1705,7 @@
 
     ui.summaryCorrect.textContent = `${correct}/${total}`;
     ui.summaryStreak.textContent = session.bestStreakThisSession;
-    ui.summaryMastered.textContent = session.masteredThisSession.length;
+    ui.summaryMastered.textContent = session.milestonesThisSession.length;
     el("summary-assistance").textContent = `${session.independentCount} independently · ${session.assistedCount} with hints · ${session.totalCount - session.independentCount - session.assistedCount} to keep practising`;
 
     if (session.kind === "ai-lesson") {
@@ -1724,11 +1737,13 @@
       ui.summarySubtitle.textContent = "Keep practicing — you'll get there.";
     }
 
-    if (session.masteredThisSession.length) {
+    if (session.milestonesThisSession.length) {
       ui.summaryMasteredSection.classList.remove("hidden");
       ui.summaryMasteredList.innerHTML = "";
-      for (const word of session.masteredThisSession) {
-        ui.summaryMasteredList.appendChild(renderWordRow(word, "Mastered", "mastered"));
+      for (const word of session.milestonesThisSession) {
+        ui.summaryMasteredList.appendChild(SRS.isMastered(data.srs[word])
+          ? renderWordRow(word, "Mastered", "mastered")
+          : renderWordRow(word, "Learned", "learned"));
       }
     } else {
       ui.summaryMasteredSection.classList.add("hidden");
@@ -1973,6 +1988,7 @@
 
   function openHistory() {
     ui.histBest.textContent = data.bestStreak;
+    ui.histLearned.textContent = countLearned();
     ui.histMastered.textContent = countMastered();
     ui.histSessions.textContent = data.sessionsCompleted;
 
@@ -1993,13 +2009,15 @@
       }
     }
 
-    const mastered = entries.filter(([, rec]) => rec.reps >= MASTERY_REPS).sort((a, b) => b[1].interval - a[1].interval);
+    const learned = entries.filter(([, rec]) => SRS.isLearned(rec)).sort((a, b) => b[1].interval - a[1].interval);
     ui.historyMasteredList.innerHTML = "";
-    if (!mastered.length) {
-      ui.historyMasteredList.innerHTML = '<div class="word-list-empty">Keep practicing to master your first word.</div>';
+    if (!learned.length) {
+      ui.historyMasteredList.innerHTML = '<div class="word-list-empty">Recall a word correctly on three different days and it shows up here.</div>';
     } else {
-      for (const [word, rec] of mastered.slice(0, 30)) {
-        ui.historyMasteredList.appendChild(renderWordRow(word, `Every ${rec.interval}d`, "mastered"));
+      for (const [word, rec] of learned.slice(0, 30)) {
+        ui.historyMasteredList.appendChild(SRS.isMastered(rec)
+          ? renderWordRow(word, `Mastered · every ${rec.interval}d`, "mastered")
+          : renderWordRow(word, `Learned · every ${rec.interval}d`, "learned"));
       }
     }
 
