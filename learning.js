@@ -8,6 +8,9 @@
   let state;
   try { state = JSON.parse(localStorage.getItem(KEY)) || empty(); } catch { state = empty(); }
   for (const key of ["lists", "notebook", "daily", "sessions"]) state[key] ||= {};
+  // Words from a pack are stored as a short reference and looked up when read (packs.js sets this).
+  let codec = { slim: e => e, hydrate: e => e };
+  const hydrate = e => codec.hydrate(e);
   const id = () => crypto.randomUUID();
   const dayKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   function persist() {
@@ -41,11 +44,19 @@
     if (!name.trim()) throw new Error("Give your list a name.");
     if (!listId && lists().length >= 50) throw new Error("You can save up to 50 lists.");
     listId ||= id();
-    state.lists[listId] = { id: listId, name: name.trim().slice(0, 60), entries: copy(entries), updatedAt: Date.now(), deleted: false };
+    state.lists[listId] = { id: listId, name: name.trim().slice(0, 60), entries: copy(entries.map(codec.slim)), updatedAt: Date.now(), deleted: false };
     persist();
     return listId;
   }
-  const lists = () => Object.values(state.lists).filter(l => !l.deleted).sort((a, b) => b.updatedAt - a.updatedAt);
+  function packsInUse() {
+    const found = new Set();
+    const scan = e => { if (e && e.pack) found.add(e.pack); };
+    for (const l of Object.values(state.lists)) l.entries.forEach(scan);
+    for (const r of Object.values(state.notebook)) scan(r.entry);
+    for (const p of Object.values(state.daily)) p.words.forEach(scan);
+    return found;
+  }
+  const lists = () => Object.values(state.lists).filter(l => !l.deleted).sort((a, b) => b.updatedAt - a.updatedAt).map(l => ({ ...l, entries: l.entries.map(hydrate) }));
   function deleteList(listId) {
     if (!state.lists[listId]) return;
     state.lists[listId] = { ...state.lists[listId], deleted: true, updatedAt: Date.now() };
@@ -53,27 +64,36 @@
   }
   function recordAttempt(entry, attempt) {
     const rec = state.notebook[entry.word] || { word: entry.word, attempts: [], note: "", noteAt: 0 };
-    rec.entry = copy(entry);
+    rec.entry = copy(codec.slim(entry));
     rec.attempts.push({ id: id(), text: attempt || "Skipped", at: Date.now() });
     rec.attempts = rec.attempts.slice(-20);
     rec.updatedAt = Date.now();
     state.notebook[entry.word] = rec;
     persist();
   }
-  function saveNote(word, note) {
-    if (!state.notebook[word]) return;
-    state.notebook[word].note = note.slice(0, 500);
-    state.notebook[word].noteAt = Date.now();
+  // A personal note on a word. A word you have missed already has a notebook record; for any other word
+  // (one you simply like) pass its entry and the first non-empty note creates one. Clearing a note keeps
+  // the record, so merging with another device cannot bring the old note back.
+  function saveNote(word, note, entry) {
+    let rec = state.notebook[word];
+    if (!rec) {
+      if (!entry || !note.trim()) return;
+      rec = state.notebook[word] = { word, entry: copy(codec.slim(entry)), attempts: [], note: "", noteAt: 0, updatedAt: 0 };
+    }
+    rec.note = note.slice(0, 500);
+    rec.noteAt = Date.now();
+    rec.updatedAt = Date.now();
     persist();
   }
+  const noteFor = word => (state.notebook[word] && state.notebook[word].note) || "";
   function seededOrder(entries, seed) {
     const hash = str => { let n = 2166136261; for (const char of str) { n ^= char.charCodeAt(0); n = Math.imul(n, 16777619); } return n >>> 0; };
     return [...entries].sort((a, b) => hash(seed + a.word) - hash(seed + b.word) || a.word.localeCompare(b.word));
   }
   function dailyPlan(progress, variant, date = dayKey()) {
-    if (state.daily[date]) return state.daily[date];
+    if (state.daily[date]) return { ...state.daily[date], words: state.daily[date].words.map(hydrate) };
     const due = Object.entries(progress.srs).filter(([, rec]) => rec.dueAt <= Date.now()).sort((a, b) => a[1].dueAt - b[1].dueAt).slice(0, 2)
-      .map(([word, rec]) => ({ ...(rec.entry || WORD_LIST.find(w => w.word === word) || {}), word }));
+      .map(([word, rec]) => ({ ...(hydrate(rec.entry) || WORD_LIST.find(w => w.word === word) || {}), word }));
     const seen = new Set(due.map(w => w.word));
     const fresh = seededOrder(WORD_LIST.map(variant).filter(w => !seen.has(w.word) && !progress.srs[w.word]), date);
     const fallback = seededOrder(WORD_LIST.map(variant).filter(w => !seen.has(w.word)), date);
@@ -82,9 +102,9 @@
       if (words.length === 5) break;
       if (!seen.has(entry.word)) { words.push(entry); seen.add(entry.word); }
     }
-    state.daily[date] = { date, words, reviewCount: due.length, results: {}, completedAt: 0, updatedAt: Date.now() };
+    state.daily[date] = { date, words: words.map(codec.slim), reviewCount: due.length, results: {}, completedAt: 0, updatedAt: Date.now() };
     persist();
-    return state.daily[date];
+    return { ...state.daily[date], words };
   }
   function dailyResult(date, entry, result) {
     const plan = state.daily[date];
@@ -101,16 +121,23 @@
     persist();
   }
   // A separate, sequential course: placement and free practice cannot skip lessons.
+  // A lesson's ID is the five words it teaches, so a finished lesson is only recognised while
+  // its words stay together. Lessons are therefore chunked per level AND per wave (WORD_WAVES in
+  // words.js): the first wave is frozen, and later waves add lessons at the end of each level
+  // without moving any word that was already in a lesson.
   function pathLessons() {
     const lessons = [];
     ["beginner", "easy", "medium", "hard", "expert"].forEach((difficulty, index) => {
-      const words = WORD_LIST.filter(w => w.difficulty === difficulty)
-        .sort((a, b) => a.word.length - b.word.length || a.word.localeCompare(b.word));
-      for (let offset = 0; offset < words.length; offset += 5) {
-        const entries = words.slice(offset, offset + 5);
-        lessons.push({ id: `path1:${entries.map(w => w.word).join(",")}`, level: index + 1,
-          difficulty, number: offset / 5 + 1, entries });
-      }
+      let number = 0;
+      WORD_WAVES.forEach((wave, waveIndex) => {
+        const words = wave.filter(w => w.difficulty === difficulty)
+          .sort((a, b) => a.word.length - b.word.length || a.word.localeCompare(b.word));
+        for (let offset = 0; offset < words.length; offset += 5) {
+          const entries = words.slice(offset, offset + 5);
+          lessons.push({ id: `path1:${entries.map(w => w.word).join(",")}`, level: index + 1,
+            difficulty, number: ++number, wave: waveIndex + 1, entries });
+        }
+      });
     });
     return lessons;
   }
@@ -120,8 +147,12 @@
       .filter(r => r.pathLesson && r.independent === r.total && r.assisted === 0 && r.total > 0)
       .filter(r => lessons.some(l => l.id === r.pathLesson && l.entries.length === r.total))
       .map(r => r.pathLesson));
+    // Lessons from a later wave never re-lock ground a learner has already covered: once any
+    // lesson further on is passed, an unpassed later-wave lesson no longer blocks the way. Its
+    // words still reach the learner through daily practice and free practice.
+    const lastPassed = lessons.reduce((last, lesson, i) => (passed.has(lesson.id) ? i : last), -1);
     let completed = 0;
-    while (completed < lessons.length && passed.has(lessons[completed].id)) completed++;
+    while (completed < lessons.length && (passed.has(lessons[completed].id) || (lessons[completed].wave > 1 && completed < lastPassed))) completed++;
     return { lessons, completed, next: lessons[completed] || null };
   }
   function reset() { state = { ...empty(), resetAt: Date.now() }; persist(); }
@@ -230,8 +261,8 @@
     function str(value, max) { if (typeof value !== "string" || value.length > max) throw new Error("The backup contains invalid text."); }
     function word(value) { if (typeof value !== "string" || !wordPattern.test(value)) throw new Error("The backup contains an invalid word."); }
     function entry(e) {
-      object(e, ["word", "hint", "syllables", "difficulty", "category", "rule", "variants", "sentence", "memoryTip", "examples", "meaning", "sounds"]); word(e.word);
-      for (const k of ["hint", "sentence", "syllables", "difficulty", "category", "rule", "memoryTip", "meaning", "sounds"]) if (e[k] !== undefined) str(e[k], 500);
+      object(e, ["word", "hint", "syllables", "difficulty", "category", "rule", "variants", "sentence", "memoryTip", "examples", "meaning", "sounds", "origin", "lang", "pack"]); word(e.word);
+      for (const k of ["hint", "sentence", "syllables", "difficulty", "category", "rule", "memoryTip", "meaning", "sounds", "origin", "lang", "pack"]) if (e[k] !== undefined) str(e[k], 500);
       if (e.examples !== undefined) {
         if (!Array.isArray(e.examples) || e.examples.length > 3) throw new Error("The backup contains invalid data.");
         e.examples.forEach((x) => str(x, 200));
@@ -338,5 +369,5 @@
     return snap;
   }
   function replace(value) { state = copy(value); persist(); }
-  window.SpellLearning = { get: () => copy(state), snapshot, replace, parseWords, saveList, deleteList, lists, recordAttempt, saveNote, dailyPlan, dailyResult, completeSession, pathLessons, pathStatus, dayKey, seededOrder, mergeSnapshots, validateSnapshot, reset };
+  window.SpellLearning = { get: () => copy(state), snapshot, replace, parseWords, saveList, deleteList, lists, recordAttempt, saveNote, noteFor, hydrate, slim: e => codec.slim(e), packsInUse, setCodec: c => { codec = c; }, dailyPlan, dailyResult, completeSession, pathLessons, pathStatus, dayKey, seededOrder, mergeSnapshots, validateSnapshot, reset };
 })();

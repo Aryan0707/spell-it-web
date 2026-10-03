@@ -83,7 +83,8 @@ async page => {
   // Do an export
   const exportBtn = page.locator('#btn-sync');
   // Navigate to sync screen
-  await page.locator('#nav-settings').click();
+  await page.locator('#nav-me').click();
+  await page.locator('#btn-me-settings').click();
   await page.locator('#btn-sync').click();
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#btn-export').click();
@@ -95,7 +96,8 @@ async page => {
   await page.locator('#btn-sync-back').click();
   await page.evaluate(() => { window.confirm = () => true; });
   await page.locator('#btn-reset').click();
-  await page.locator('#nav-settings').click();
+  await page.locator('#nav-me').click();
+  await page.locator('#btn-me-settings').click();
   await page.locator('#btn-sync').click();
   await page.locator('#backup-file').setInputFiles(tmpPath);
   await page.locator('#btn-import').click();
@@ -177,6 +179,7 @@ async page => {
   await page.locator('#btn-start').waitFor();
 
   // Click assessment button (now separate from #btn-start)
+  await page.locator('#nav-practice').click();
   await page.locator('#btn-start-assessment').click();
   await page.waitForTimeout(500);
 
@@ -254,7 +257,8 @@ async page => {
 
   // ---- TEST 9: Coach reset propagates ----
   await page.evaluate(() => { window.confirm = () => true; });
-  await page.locator('#nav-settings').click();
+  await page.locator('#nav-me').click();
+  await page.locator('#btn-me-settings').click();
   await page.locator('#btn-reset').click();
   await page.waitForTimeout(500); // wait for reset to complete and reload
   const afterReset = await page.evaluate(() => {

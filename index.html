@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0A0C10" />
+<meta name="theme-color" content="#0B0E13" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Spell It" />
 <title>Spell It</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=36" />
-<link rel="icon" href="icons/favicon-32.png?v=36" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=36" />
-<link rel="stylesheet" href="coach.css?v=36" id="coach-css" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=57" />
+<link rel="icon" href="icons/favicon-32.png?v=57" sizes="32x32" />
+<link rel="stylesheet" href="style.css?v=57" />
+<link rel="stylesheet" href="coach.css?v=57" id="coach-css" />
 </head>
 <body>
 <div id="app">
 
-  <!-- HOME SCREEN -->
+  <!-- HOME: today, in one glance -->
   <section id="screen-home" class="screen active">
     <div class="home-inner">
 
       <!-- Top brand row -->
       <header class="home-header">
         <div class="home-brand">
-          <img class="logo-icon" src="icons/icon-192.png?v=36" alt="" />
+          <img class="logo-icon" src="icons/icon-192.png?v=57" alt="" />
           <span>Spell It</span>
         </div>
         <button class="icon-btn header-icon" id="btn-header-progress" aria-label="Your progress">
@@ -70,49 +70,6 @@
       </button>
       <p class="practice-summary" id="practice-summary"></p>
 
-      <!-- Mode toggle: subtle segmented pill under the CTA -->
-      <div class="mode-toggle mode-toggle-inline" role="tablist" aria-label="Practice mode">
-        <button class="mode-btn active" id="mode-listen" data-mode="listen">
-          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
-          Listen
-        </button>
-        <button class="mode-btn" id="mode-read" data-mode="read">
-          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-          Read
-        </button>
-      </div>
-
-      <!-- Quick session strip (horizontal scroll on mobile) -->
-      <div class="quick-strip-wrap">
-        <div class="quick-strip" aria-label="Quick starts">
-          <button class="quick-tile" id="btn-daily" aria-label="Daily five">
-            <span class="quick-tile-icon">📅</span>
-            <span class="quick-tile-label">Daily 5</span>
-            <span class="quick-tile-sub" id="daily-count">0 / 5</span>
-          </button>
-          <button class="quick-tile hidden" id="btn-review-due" aria-label="Review due words">
-            <span class="quick-tile-icon">🔁</span>
-            <span class="quick-tile-label">Review</span>
-            <span class="quick-tile-sub">due words</span>
-          </button>
-          <button class="quick-tile" id="btn-proofread" aria-label="Spot the mistake">
-            <span class="quick-tile-icon">🕵️</span>
-            <span class="quick-tile-label">Spot it</span>
-            <span class="quick-tile-sub">find the typo</span>
-          </button>
-          <button class="quick-tile" id="btn-lists" aria-label="My word lists">
-            <span class="quick-tile-icon">📝</span>
-            <span class="quick-tile-label">My lists</span>
-            <span class="quick-tile-sub">your words</span>
-          </button>
-          <button class="quick-tile" id="btn-notebook" aria-label="Spelling notebook">
-            <span class="quick-tile-icon">📓</span>
-            <span class="quick-tile-label">Notebook</span>
-            <span class="quick-tile-sub">memory tips</span>
-          </button>
-        </div>
-      </div>
-
       <!-- Word of the day -->
       <section class="wotd-card" aria-labelledby="wotd-heading">
         <div class="wotd-eyebrow">Word of the day</div>
@@ -126,7 +83,16 @@
           <button class="btn btn-primary btn-tight" id="btn-wotd-learn" type="button">Learn this word →</button>
         </div>
       </section>
+      <button class="btn btn-ghost hidden" id="btn-history" aria-hidden="true"></button>
+      <button class="btn btn-ghost hidden" id="btn-settings">Settings</button>
+    </div>
+  </section>
 
+  <!-- LEARN: the course and new words -->
+  <section id="screen-learn" class="screen">
+    <header class="settings-header"><h2><span class="title-text">Learn</span></h2></header>
+    <div class="settings-body">
+      <p class="feature-intro">One short lesson at a time, from easy words to expert ones.</p>
       <!-- LEARNING PATH -->
       <section class="learning-path daily-card" aria-labelledby="path-heading">
         <div class="daily-heading"><h2 id="path-heading">Your learning path</h2><span id="path-count"></span></div>
@@ -136,10 +102,12 @@
         <p class="path-note">Learn → copy → recall → final check. Only the final check unlocks the next lesson.</p>
       </section>
 
-      <!-- MORE (collapsed) -->
-      <details class="more-section">
-        <summary><span>More ways to practise</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chev"><polyline points="6 9 12 15 18 9"></polyline></svg></summary>
-        <div class="more-body">
+      <section class="daily-card packs-card" aria-labelledby="packs-heading">
+        <div class="daily-heading"><h2 id="packs-heading">Words from around the world</h2></div>
+        <p>Long or strange-looking words are just words you have not met yet. Practise them in small steps, one language at a time.</p>
+        <div id="packs-list" class="pack-list"></div>
+      </section>
+
           <section class="daily-card" aria-labelledby="ai-lab-heading">
             <div class="daily-heading"><h2 id="ai-lab-heading">AI word lab</h2><span id="ai-lab-level"></span></div>
             <p>Fresh words at your level, with meanings and spelling tips.</p>
@@ -148,19 +116,72 @@
             <p id="ai-lab-status" class="settings-note" role="status"></p>
             <p class="settings-note">Uses your OpenRouter credits. AI can make mistakes; check unfamiliar words in a dictionary.</p>
           </section>
+    </div>
+  </section>
 
-          <div class="daily-card">
-            <div class="daily-heading"><h2>This week</h2></div>
-            <p id="daily-description">Five words chosen for you each day.</p>
-            <div class="week-calendar" id="week-calendar" aria-label="This week's daily challenges"></div>
+  <!-- PRACTICE: pick an activity -->
+  <section id="screen-practice" class="screen">
+    <header class="settings-header"><h2><span class="title-text">Practice</span></h2></header>
+    <div class="settings-body">
+      <div id="assessment-slot"></div>
+      <div class="menu-list" aria-label="Activities">
+          <button class="menu-row" id="btn-daily">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+            <span class="menu-text"><strong>Daily five</strong><small>Five words picked for you today</small></span>
+            <span class="menu-badge" id="daily-count">0 / 5</span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+          <button class="menu-row hidden" id="btn-review-due">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></span>
+            <span class="menu-text"><strong>Review due words</strong><small>Words that are ready to see again</small></span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+          <button class="menu-row" id="btn-proofread">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+            <span class="menu-text"><strong>Spot the mistake</strong><small>Find the misspelled word in a sentence</small></span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+      </div>
+
+      <div class="feature-card practice-setup">
+        <h3>Free practice</h3>
+        <p class="settings-note">Choose how you want to practise, then press start.</p>
+      <!-- Mode toggle: subtle segmented pill under the CTA -->
+      <div class="mode-toggle mode-toggle-inline" role="tablist" aria-label="Practice mode">
+        <button class="mode-btn active" id="mode-listen" data-mode="listen">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
+          Listen
+        </button>
+        <button class="mode-btn" id="mode-read" data-mode="read">
+          <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          Read
+        </button>
+      </div>
+      <div class="options-card">
+<div class="filter-group">
+          <div class="filter-label">Session Length</div>
+          <div class="chip-row" id="length-chips">
+            <button class="chip" data-value="5">Sprint · 5</button>
+            <button class="chip active" data-value="10">Standard · 10</button>
+            <button class="chip" data-value="20">Long · 20</button>
           </div>
         </div>
-      </details>
 
-      <details class="practice-options">
-      <summary>Customise practice</summary>
-      <div class="options-card">
-        <div class="filter-group">
+        <div class="options-divider"></div>
+
+<div class="filter-group">
+          <div class="filter-label">Answer With</div>
+          <div class="chip-row" id="input-mode-chips">
+            <button class="chip active" data-value="tiles">Letter Tiles</button>
+            <button class="chip" data-value="type">Type It</button>
+            <button class="chip" data-value="choice">Multiple Choice</button>
+          </div>
+        </div>
+        </div>
+        <details class="practice-more">
+          <summary>More options</summary>
+          <div class="options-card">
+<div class="filter-group">
           <div class="filter-label">Difficulty</div>
           <div class="chip-row" id="difficulty-chips">
             <button class="chip active" data-value="all">All</button>
@@ -174,36 +195,14 @@
 
         <div class="options-divider"></div>
 
-        <div class="filter-group">
+<div class="filter-group">
           <div class="filter-label">Category</div>
           <div class="chip-row" id="category-chips"></div>
         </div>
 
         <div class="options-divider"></div>
 
-        <div class="filter-group">
-          <div class="filter-label">Session Length</div>
-          <div class="chip-row" id="length-chips">
-            <button class="chip" data-value="5">Sprint · 5</button>
-            <button class="chip active" data-value="10">Standard · 10</button>
-            <button class="chip" data-value="20">Long · 20</button>
-          </div>
-        </div>
-
-        <div class="options-divider"></div>
-
-        <div class="filter-group">
-          <div class="filter-label">Answer With</div>
-          <div class="chip-row" id="input-mode-chips">
-            <button class="chip active" data-value="tiles">Letter Tiles</button>
-            <button class="chip" data-value="type">Type It</button>
-            <button class="chip" data-value="choice">Multiple Choice</button>
-          </div>
-        </div>
-
-        <div class="options-divider"></div>
-
-        <div class="filter-group">
+<div class="filter-group">
           <div class="filter-label">Challenge</div>
           <div class="chip-row" id="timed-chips">
             <button class="chip active" data-value="off">Untimed</button>
@@ -213,18 +212,52 @@
 
         <div class="options-divider"></div>
 
-        <div class="filter-group" style="margin-bottom: 0;">
+<div class="filter-group">
           <div class="filter-label">Spelling Style</div>
           <div class="chip-row" id="spelling-style-chips">
             <button class="chip active" data-value="us">American (US)</button>
             <button class="chip" data-value="uk">British (UK)</button>
           </div>
         </div>
+          </div>
+        </details>
+        <button class="btn btn-primary btn-big" id="btn-free-practice" type="button">Start free practice</button>
       </div>
 
-      </details>
-      <button class="btn btn-ghost hidden" id="btn-history" aria-hidden="true"></button>
-      <button class="btn btn-ghost hidden" id="btn-settings">Settings</button>
+          <div class="daily-card">
+            <div class="daily-heading"><h2>This week</h2></div>
+            <p id="daily-description">Five words chosen for you each day.</p>
+            <div class="week-calendar" id="week-calendar" aria-label="This week's daily challenges"></div>
+          </div>
+    </div>
+  </section>
+
+  <!-- YOU: progress, your words and settings -->
+  <section id="screen-me" class="screen">
+    <header class="settings-header"><h2><span class="title-text">You</span></h2></header>
+    <div class="settings-body">
+      <div class="menu-list">
+          <button class="menu-row" id="btn-me-progress">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
+            <span class="menu-text"><strong>Your progress</strong><small>Streak, words learned and weak spots</small></span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+          <button class="menu-row" id="btn-lists">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
+            <span class="menu-text"><strong>My word lists</strong><small>Add your own words to practise</small></span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+          <button class="menu-row" id="btn-notebook">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></span>
+            <span class="menu-text"><strong>Spelling notebook</strong><small>Mistakes and memory tips</small></span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+          <button class="menu-row" id="btn-me-settings">
+            <span class="menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></span>
+            <span class="menu-text"><strong>Settings</strong><small>AI key, voice, sound and backup</small></span>
+            <svg class="menu-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg>
+          </button>
+      </div>
     </div>
   </section>
 
@@ -368,7 +401,7 @@
 
   <!-- HISTORY / STATS SCREEN -->
   <section id="screen-lists" class="screen">
-    <header class="settings-header"><button class="icon-btn feature-back" aria-label="Back to home">←</button><h2>My word lists</h2></header>
+    <header class="settings-header"><button class="icon-btn feature-back" data-back="me" aria-label="Back to You">←</button><h2>My word lists</h2></header>
     <div class="settings-body">
       <p class="feature-intro">School homework, work vocabulary, or words you want to get right.</p>
       <form id="list-form" class="feature-card">
@@ -388,13 +421,35 @@
   </section>
 
   <section id="screen-notebook" class="screen">
-    <header class="settings-header"><button class="icon-btn feature-back" aria-label="Back to home">←</button><h2>Spelling notebook</h2></header>
+    <header class="settings-header"><button class="icon-btn feature-back" data-back="me" aria-label="Back to You">←</button><h2>Spelling notebook</h2></header>
     <div class="settings-body">
       <p class="feature-intro">Your attempts, the right spelling, and a reminder in your own words.</p>
       <label class="field-label" for="notebook-search">Find a word</label>
       <input class="text-input" id="notebook-search" type="search" placeholder="Search your notebook" />
       <button class="btn btn-review" id="btn-notebook-practice">Practise these words</button>
       <div id="notebook-list" class="feature-stack"></div>
+    </div>
+  </section>
+
+  <section id="screen-chat" class="screen">
+    <header class="settings-header"><h2><span class="title-text">Ask AI</span></h2>
+      <button class="btn btn-ghost chat-clear" id="chat-clear" type="button">Clear chat</button></header>
+    <div class="chat-body">
+      <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Conversation"></div>
+      <div id="chat-setup" class="chat-setup hidden">
+        <p class="settings-note">Ask AI uses your OpenRouter key. Add it in Settings and turn on AI-generated words.</p>
+        <button class="btn btn-primary" id="btn-chat-setup" type="button">Set up AI →</button>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <p id="chat-status" class="settings-status" role="status"></p>
+        <div class="chat-compose">
+          <label class="sr-only" for="chat-input">Your question</label>
+          <textarea id="chat-input" class="text-input" rows="2" maxlength="500" placeholder="Ask about a word or a name…" autocapitalize="sentences" enterkeyhint="send"></textarea>
+          <button class="btn btn-primary" id="chat-send" type="submit">Send</button>
+          <button class="btn btn-ghost hidden" id="chat-stop" type="button">Stop</button>
+        </div>
+        <p class="settings-note chat-note">Questions go to OpenRouter with your key and use your credits. AI can make mistakes; check unfamiliar spellings in a dictionary.</p>
+      </form>
     </div>
   </section>
 
@@ -544,7 +599,10 @@
 
       <p class="hint" id="hint-text"></p>
       <div class="hint-controls">
-        <button class="btn btn-ghost" id="btn-hint">Need a hint?</button>
+        <div class="hint-buttons">
+          <button class="btn btn-ghost" id="btn-hint">Need a hint?</button>
+          <button class="btn btn-ghost hidden" id="btn-sentence" type="button">Hear it in a sentence</button>
+        </div>
         <button class="btn btn-ghost hidden" id="btn-learn-word">I don't know yet</button>
         <span id="hint-level" class="settings-note" role="status"></span>
       </div>
@@ -590,6 +648,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>
             <span>Listen to the word</span>
           </button>
+          <div class="study-origin hidden" id="study-origin"></div>
           <div class="study-hint" id="study-hint"></div>
           <div class="study-meaning hidden" id="study-meaning">
             <span class="study-pos" id="study-pos"></span>
@@ -605,6 +664,14 @@
             <span id="study-rule-tip-text"></span>
           </div>
           <div id="pronounce-coach" class="pronounce-coach"></div>
+          <div class="study-note">
+            <button type="button" class="btn btn-ghost study-note-toggle" id="btn-study-note">Add my own note</button>
+            <div class="study-note-box hidden" id="study-note-box">
+              <label class="field-label" for="study-note-input">My note</label>
+              <textarea id="study-note-input" class="text-input" rows="2" maxlength="500" placeholder="Why you like this word, or a trick that helps you remember it…"></textarea>
+              <span class="settings-note" id="study-note-status" role="status"></span>
+            </div>
+          </div>
         </div>
         <div id="study-copy-panel" class="study-copy-panel hidden">
           <label class="field-label" for="study-copy">Copy the spelling once. Then we'll hide it.</label>
@@ -632,40 +699,49 @@
   <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav" id="bottom-nav" aria-label="Main navigation">
     <button class="bottom-nav-item active" data-screen="home" id="nav-today">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-      <span>Today</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>
+      <span>Home</span>
     </button>
-    <button class="bottom-nav-item" data-screen="lists" id="nav-words">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-      <span>My words</span>
+    <button class="bottom-nav-item" data-screen="learn" id="nav-learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"></path><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"></path></svg>
+      <span>Learn</span>
     </button>
-    <button class="bottom-nav-item" data-screen="history" id="nav-progress">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-      <span>Progress</span>
+    <button class="bottom-nav-item" data-screen="practice" id="nav-practice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4"></circle><circle cx="12" cy="12" r="0.5"></circle></svg>
+      <span>Practice</span>
     </button>
-    <button class="bottom-nav-item" data-screen="settings" id="nav-settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 13.09H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-      <span>Settings</span>
+    <button class="bottom-nav-item" data-screen="chat" id="nav-chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"></path></svg>
+      <span>Ask AI</span>
+    </button>
+    <button class="bottom-nav-item" data-screen="me" id="nav-me">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+      <span>You</span>
     </button>
   </nav>
 
 </div>
-<script src="words.js?v=36"></script>
-<script src="ai.js?v=36"></script>
-<script src="tts.js?v=36"></script>
-<script src="neural-voice.js?v=36"></script>
-<script src="meanings.js?v=36"></script>
-<script src="sounds.js?v=36"></script>
-<script src="word-info.js?v=36"></script>
-<script src="pronounce.js?v=36"></script>
-<script src="sfx.js?v=36"></script>
-<script src="delight.js?v=36"></script>
-<script src="practice-content.js?v=36"></script>
-<script src="srs.js?v=36"></script>
-<script src="learning.js?v=36"></script>
-<script src="learning-ui.js?v=36"></script>
-<script src="coach.js?v=36"></script>
-<script src="sync.js?v=36"></script>
-<script src="app.js?v=36"></script>
+<script src="words.js?v=57"></script>
+<script src="ai.js?v=57"></script>
+<script src="tts.js?v=57"></script>
+<script src="neural-voice.js?v=57"></script>
+<script src="meanings.js?v=57"></script>
+<script src="sounds.js?v=57"></script>
+<script src="word-info.js?v=57"></script>
+<script src="pronounce.js?v=57"></script>
+<script src="sfx.js?v=57"></script>
+<script src="delight.js?v=57"></script>
+<script src="practice-content.js?v=57"></script>
+<script src="srs.js?v=57"></script>
+<script src="scoring.js?v=57"></script>
+<script src="learning.js?v=57"></script>
+<script src="learning-ui.js?v=57"></script>
+<script src="chat.js?v=57"></script>
+<script src="packs.js?v=57"></script>
+<!-- Word packs (packs-world.js, packs-names.js) load on demand. Packs this device already uses load now, before the app starts. -->
+<script>try{var p=JSON.parse(localStorage.getItem("spellit_packs"));if(Array.isArray(p))p.forEach(function(id){if(/^[a-z]+$/.test(id))document.write("<script src='packs-"+id+".js?v=57'><\/script>")})}catch(e){}</script>
+<script src="coach.js?v=57"></script>
+<script src="sync.js?v=57"></script>
+<script src="app.js?v=57"></script>
 </body>
 </html>

@@ -17,16 +17,24 @@
     const listen = button("Listen", () => app.speak(shown.word), "btn btn-ghost word-detail-listen");
     listen.setAttribute("aria-label", `Listen to ${shown.word}`);
     head.append(listen);
+    // Opens the chat with a question typed in; nothing is sent until the learner presses Send.
+    const ask = button("Ask AI", () => SpellChat.open({ prefill: `Tell me about the word "${shown.word}": what it means, how to say it, and a way to remember the spelling.` }), "btn btn-ghost word-detail-listen");
+    ask.setAttribute("aria-label", `Ask AI about ${shown.word}`);
+    head.append(ask);
     if (info.meaning) head.append(node("span", "study-pos", info.meaning.pos));
+    if (info.origin) head.append(node("span", "word-origin", info.origin));
     row.append(head);
     row.append(node("p", "word-detail-def", info.meaning ? info.meaning.definition : info.hint || "No meaning saved yet. Add one as “word | definition”, or use Add details with AI."));
+    const mine = SpellLearning.noteFor(shown.word);
+    if (mine) row.append(node("p", "word-detail-note", `My note: ${mine}`));
     if (info.meaning && info.meaning.related.length) row.append(node("p", "study-related", `Related: ${info.meaning.related.join(" · ")}`));
     if (info.examples.length) {
       const list = node("ul", "word-detail-examples");
       for (const sentence of info.examples) {
         const li = document.createElement("li");
-        li.append(...SpellWordInfo.sentenceNodes(sentence, shown.word),
-          SpellWordInfo.listenButton("Listen to this example", () => app.speak(SpellWordInfo.sentenceText(sentence, shown.word))));
+        const display = SpellWordInfo.shownWord(shown);
+        li.append(...SpellWordInfo.sentenceNodes(sentence, display),
+          SpellWordInfo.listenButton("Listen to this example", () => app.speak(SpellWordInfo.sentenceText(sentence, display))));
         list.append(li);
       }
       row.append(list);
@@ -38,8 +46,8 @@
         if (i) say.append(node("span", "pc-sep", "·"));
         say.append(node("span", i === info.guide.stress ? "pc-part pc-stress" : "pc-part", part.toLowerCase()));
       });
-      const tag = node("span", "pc-accent", info.guide.source === "ai" ? "AI" : "US");
-      tag.title = info.guide.source === "ai" ? "Written by AI, so it may contain mistakes" : "General American pronunciation";
+      const tag = node("span", "pc-accent", info.guide.source === "ai" ? "AI" : info.guide.source === "pack" ? "Guide" : "US");
+      tag.title = info.guide.source === "ai" ? "Written by AI, so it may contain mistakes" : info.guide.source === "pack" ? "Hand-written guide; names and borrowed words vary, so it is approximate" : "General American pronunciation";
       line.append(say, node("span", "pc-ipa", info.guide.ipa), tag);
       row.append(line);
     }
@@ -117,20 +125,24 @@
   function clearForm() { editing = null; el("list-form").reset(); el("list-form-title").textContent = "Make a word list"; el("btn-cancel-list").classList.add("hidden"); }
   function notebookEntries() {
     const q = el("notebook-search").value.trim().toLowerCase();
-    return Object.values(SpellLearning.get().notebook).filter(r => r.word.includes(q) || r.note.toLowerCase().includes(q)).sort((a, b) => b.updatedAt - a.updatedAt);
+    // A word is in the notebook once you have missed it or written a note on it; clearing a note on a word you never missed removes it from view.
+    return Object.values(SpellLearning.get().notebook).filter(r => (r.attempts.length || r.note.trim()) && (r.word.includes(q) || r.note.toLowerCase().includes(q)))
+      .map(r => ({ ...r, entry: SpellLearning.hydrate(r.entry) })).sort((a, b) => b.updatedAt - a.updatedAt);
   }
   function renderNotebook() {
     const target = el("notebook-list"); target.replaceChildren();
     const entries = notebookEntries();
     el("btn-notebook-practice").disabled = !entries.length;
-    if (!entries.length) target.append(node("p", "word-list-empty", el("notebook-search").value ? "No matching words. Try another search." : "Mistakes are part of learning. Your next tricky word will appear here, ready for a memory tip."));
+    if (!entries.length) target.append(node("p", "word-list-empty", el("notebook-search").value ? "No matching words. Try another search." : "Words you miss appear here, and so does any word you add a note to from its study card."));
     for (const rec of entries) {
       const card = node("article", "feature-card notebook-entry");
       card.append(node("h3", "", rec.word));
-      const attempts = node("p", "attempt-history");
-      attempts.append(node("span", "settings-note", "Your attempts: "));
-      attempts.append(node("span", "", rec.attempts.slice(-4).map(a => a.text).join(" · ")));
-      card.append(attempts);
+      if (rec.attempts.length) {
+        const attempts = node("p", "attempt-history");
+        attempts.append(node("span", "settings-note", "Your attempts: "));
+        attempts.append(node("span", "", rec.attempts.slice(-4).map(a => a.text).join(" · ")));
+        card.append(attempts);
+      }
       const tip = rec.entry.memoryTip || (rec.entry.rule && RULE_TIPS[rec.entry.rule]) || `Look carefully at ${rec.word.toUpperCase()}. Say it, cover it, then try writing it from memory.`;
       card.append(node("p", "memory-tip", tip));
       const label = node("label", "field-label", "My memory tip"); label.htmlFor = `note-${rec.word}`;
@@ -182,7 +194,7 @@
   }
   function init(adapter) {
     app = adapter;
-    document.querySelectorAll(".feature-back").forEach(b => b.addEventListener("click", () => app.show("home")));
+    document.querySelectorAll(".feature-back").forEach(b => b.addEventListener("click", () => app.show(b.dataset.back || "home")));
     el("btn-lists").addEventListener("click", () => { renderLists(); app.show("lists"); });
     el("btn-notebook").addEventListener("click", () => { renderNotebook(); app.show("notebook"); });
     el("btn-notebook-practice").addEventListener("click", () => app.start(notebookEntries().map(r => r.entry), { kind: "review", title: "Notebook" }));

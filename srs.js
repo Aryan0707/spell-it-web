@@ -61,14 +61,22 @@
   //   rec        — existing SRS record or undefined
   //   wasClean   — true for a first-try, unassisted correct answer
   //   nearMiss   — for a non-clean result: the slip was one letter, with no hint used
+  //   neutral    — true when the round told us nothing about recall (e.g. the learner
+  //                 only RECOGNISED the word from multiple-choice options). The schedule
+  //                 is left exactly as it was: no reps, no interval, no ease change.
+  //                 Without this, a correct recognition would be scored as either a
+  //                 clean recall (wrongly promoting the word to Mastered) or as a miss
+  //                 (wrongly destroying mastery the learner had earned).
   //   now        — Date.now() (ms)
   //   canBumpMastery(word, rec) — predicate, true unless it's a same-day repeat
   //   word       — the SRS key, only used for the mastery predicate
-  function schedule({ rec, wasClean, nearMiss, now, word, canBumpMastery }) {
+  function schedule({ rec, wasClean, nearMiss, neutral, now, word, canBumpMastery }) {
     const base = rec ? { ...rec } : makeRecord();
     if (base.ease === undefined) base.ease = DEFAULT_EASE;
 
-    if (wasClean) {
+    if (neutral) {
+      // Evidence-free round. Keep reps, interval and ease untouched.
+    } else if (wasClean) {
       const bump = typeof canBumpMastery === "function" ? canBumpMastery(word, base) : true;
       if (bump) {
         base.reps += 1;
@@ -108,6 +116,18 @@
     return 0.2;
   }
 
+  // Same-session relearning. A missed word comes back for a "second look" a few words later:
+  // far enough that the correction has left working memory (so it is real retrieval, not an
+  // echo), close enough that the correction is still fresh. Re-tests are practice only; they
+  // never touch the schedule, the streak or the session score.
+  //   retestsSoFar — how many second looks this word has already had in this session
+  // Returns the number of words to wait, or undefined to stop re-testing it today (it is
+  // already due again at the next session).
+  function relearnGap(retestsSoFar) {
+    const gaps = [3, 6]; // first look 3 words later, then 6 more after that
+    return gaps[retestsSoFar];
+  }
+
   function isLearned(rec) {
     return !!rec && rec.reps >= LEARNED_REPS;
   }
@@ -135,6 +155,7 @@
     isMastered,
     isNearMiss,
     overdueDays,
+    relearnGap,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

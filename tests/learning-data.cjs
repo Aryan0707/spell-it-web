@@ -137,3 +137,71 @@ test('backups keep AI study-card extras and still reject malformed or unknown en
     { ...extras, apiKey: 'sk-secret' },
   ]) assert.throws(() => api.validateSnapshot(withEntry(bad)), /invalid/i, JSON.stringify(bad).slice(0, 60));
 });
+
+// ---- the course grows by waves without disturbing anyone's finished lessons ----
+const crypto = require('node:crypto');
+const passLesson = (api, lesson, id) => api.completeSession(id, { pathLesson: lesson.id,
+  independent: lesson.entries.length, assisted: 0, total: lesson.entries.length }, 1);
+
+test('the first wave of lessons is frozen, so finished lessons stay finished', () => {
+  const { api } = setup();
+  const first = api.pathLessons().filter(l => l.wave === 1);
+  const fingerprint = crypto.createHash('sha256').update(first.map(l => l.id).join('\n')).digest('hex');
+  // Lesson IDs are the words themselves. If this fails, a word in CORE_WORDS was added, removed,
+  // renamed or moved between levels: put new words in a NEW wave instead (see words.js).
+  assert.equal(first.length, 48);
+  assert.equal(fingerprint, 'ed540678aeef034aa4144c89db16a280a0d81db5d248086198ac5d2c99e6f3aa');
+});
+
+test('later waves add lessons at the end of each level and number them continuously', () => {
+  const { api } = setup();
+  const lessons = api.pathLessons();
+  for (let level = 1; level <= 5; level++) {
+    const inLevel = lessons.filter(l => l.level === level);
+    assert.deepEqual(inLevel.map(l => l.number), inLevel.map((_, i) => i + 1), `level ${level} numbers run 1..n`);
+    const waves = inLevel.map(l => l.wave);
+    assert.deepEqual([...waves], [...waves].sort(), `level ${level}: wave 1 lessons come before wave 2 lessons`);
+  }
+  assert.ok(lessons.some(l => l.wave > 1), 'there is at least one later-wave lesson');
+  assert.equal(lessons.filter(l => l.wave > 1).every(l => l.entries.length === 5), true, 'new lessons are full');
+});
+
+test('a learner who finished the original course keeps their place', () => {
+  const { api } = setup();
+  const lessons = api.pathLessons();
+  lessons.filter(l => l.wave === 1).forEach((l, i) => passLesson(api, l, `old${i}`));
+  const status = api.pathStatus();
+  const waived = lessons.filter(l => l.wave > 1 && l.level < 5).length;
+  assert.equal(status.next.wave, 2, 'what is left is new content');
+  assert.equal(status.next.level, 5, 'only the new Expert lessons remain, nothing is re-locked below them');
+  assert.equal(status.completed, lessons.length - lessons.filter(l => l.wave > 1 && l.level === 5).length);
+  assert.ok(waived > 0);
+});
+
+test('a learner partway through keeps their place and is not sent back to new lessons', () => {
+  const { api } = setup();
+  const lessons = api.pathLessons();
+  const old = lessons.filter(l => l.wave === 1);
+  old.slice(0, 10).forEach((l, i) => passLesson(api, l, `old${i}`));
+  const next = api.pathStatus().next;
+  assert.equal(next.id, old[10].id, 'the next lesson is the next ORIGINAL lesson');
+});
+
+test('a new learner meets the new lessons in order and cannot skip them', () => {
+  const { api } = setup();
+  const lessons = api.pathLessons();
+  const beginner = lessons.filter(l => l.level === 1);
+  const legacy = beginner.filter(l => l.wave === 1);
+  legacy.forEach((l, i) => passLesson(api, l, `a${i}`));
+  const next = api.pathStatus().next;
+  assert.equal(next.wave, 2, 'finishing the first wave of a level leads straight into the new lessons');
+  assert.equal(next.level, 1);
+  assert.equal(next.number, legacy.length + 1);
+  // Walking the whole course in order never skips or repeats a lesson.
+  const walker = setup().api;
+  for (const [i, lesson] of walker.pathLessons().entries()) {
+    assert.equal(walker.pathStatus().next.id, lesson.id, `lesson ${i + 1} is next`);
+    passLesson(walker, lesson, `w${i}`);
+  }
+  assert.equal(walker.pathStatus().next, null);
+});

@@ -140,8 +140,8 @@
           h("span", { class: "pc-guide-label" }, "IPA"), h("span", { class: "pc-ipa" }, guide.ipa),
           h("span", {
             class: "pc-accent",
-            title: guide.source === "ai" ? "Written by AI, so it may contain mistakes" : "General American pronunciation",
-          }, guide.source === "ai" ? "AI" : "US")),
+            title: guide.source === "ai" ? "Written by AI, so it may contain mistakes" : guide.source === "pack" ? "Hand-written guide; names and borrowed words vary, so it is approximate" : "General American pronunciation",
+          }, guide.source === "ai" ? "AI" : guide.source === "pack" ? "Guide" : "US")),
         guide.note ? h("div", { class: "pc-guide-note" }, guide.note) : null,
       );
     }

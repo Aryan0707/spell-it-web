@@ -41,7 +41,7 @@
     localStorage.setItem(MISTAKE_LOG_KEY, JSON.stringify(log));
   }
 
-  async function callOpenRouter(messages, { timeoutMs = 20000, maxTokens = 2500, signal } = {}) {
+  async function callOpenRouter(messages, { timeoutMs = 20000, maxTokens = 2500, temperature = 0.8, task = "generate words", signal } = {}) {
     const cfg = loadConfig();
     if (!cfg.apiKey) throw new Error("No API key configured");
 
@@ -63,7 +63,7 @@
         body: JSON.stringify({
           model: cfg.model || DEFAULT_MODEL,
           messages,
-          temperature: 0.8,
+          temperature,
           max_tokens: maxTokens,
         }),
         signal: controller.signal,
@@ -71,7 +71,7 @@
 
       if (!res.ok) {
         const messages = { 401: "Check your OpenRouter API key in Settings.", 402: "Your OpenRouter credits are exhausted. Add credits or keep using the built-in course.", 429: "OpenRouter is rate-limiting requests. Wait a little before trying again." };
-        throw new Error(messages[res.status] || `OpenRouter could not generate words (HTTP ${res.status}). Try again or check your model in Settings.`);
+        throw new Error(messages[res.status] || `OpenRouter could not ${task} (HTTP ${res.status}). Try again or check your model in Settings.`);
       }
 
       const json = await res.json();
@@ -293,6 +293,77 @@
     return content.trim();
   }
 
+  // The plain a-z form of a word or name, so it can be practised with letter tiles and typed with an
+  // ordinary keyboard: Siobhán -> siobhan, Straße -> strasse, Ørsted -> orsted. The original spelling
+  // is kept separately, in the word's origin text.
+  function fold(text) {
+    return String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/ß/g, "ss").replace(/[æÆ]/g, "ae").replace(/[œŒ]/g, "oe").replace(/[øØ]/g, "o")
+      .replace(/[đĐ]/g, "d").replace(/[łŁ]/g, "l").replace(/ı/g, "i")
+      .toLowerCase().replace(/[^a-z]/g, "");
+  }
+
+  // Pick words and names worth practising out of the latest chat exchange. `turns` is the recent
+  // conversation ([{ role, content }]). Anything the model gets wrong is dropped item by item, the same
+  // way the word lab treats its output, so a bad definition never costs the learner the word itself.
+  async function suggestWords(turns, { spellingStyle, signal } = {}) {
+    const talk = turns.slice(-4).map((m) => `${m.role === "user" ? "Learner" : "Tutor"}: ${String(m.content).slice(0, 1200)}`).join("\n");
+    const prompt =
+      `Here is the end of a chat between a learner and a spelling tutor:\n${talk}\n\n` +
+      `Pick up to 6 single words or names from it that are worth practising spelling, focusing on what the learner just asked about and the tutor just answered. ` +
+      `They may be words in any language, or personal names, surnames and places (for example Irish, Indian, British or other names). One word each: skip phrases.\n` +
+      `For each give:\n` +
+      `- word: lowercase letters a-z only (remove accents, spaces, hyphens and apostrophes), 3-24 letters.\n` +
+      `- written: the real spelling with accents and capital letters, for example "Siobhán".\n` +
+      `- origin: what it is, at most 60 characters, for example "Irish first name", "German word used in English" or "Place in England".\n` +
+      `- lang: a two-letter language code ONLY if the word is normally said in its own language rather than the English way and is written in Latin letters (for example "de", "pt", "es"); otherwise "".\n` +
+      `- hint: a plain-English meaning of at most 15 words that never contains the word itself.\n` +
+      detailRules(spellingStyle) +
+      `- For a name, partOfSpeech must be exactly "first name", "surname" or "place name".\n` +
+      `Never invent a word or a meaning; leave out anything you are not sure about.\n` +
+      `Respond with ONLY a minified JSON array, no markdown, no commentary, in this exact shape:\n` +
+      `[{"word":"siobhan","written":"Siobhán","origin":"Irish first name","lang":"","hint":"A traditional Irish girl's name.","partOfSpeech":"first name","definition":"A traditional Irish girl's name, said with a sh sound at the start.","related":[],"examples":["Siobhan won the school spelling prize.","My friend Siobhan always spells it out for new teachers.","Nobody guesses how to say Siobhan on the first try."],"syllables":"sio-bhan","respelling":"shi-VAWN","ipa":"/ʃɪˈvɔːn/","soundNote":"In Irish, sio says shi and bh says v."}]`;
+
+    const content = await callOpenRouter([
+      { role: "system", content: "You are a precise JSON API that picks words and names for spelling practice. Output only valid JSON, nothing else." },
+      { role: "user", content: prompt },
+    ], { signal, maxTokens: 3800, timeoutMs: 45000, temperature: 0.3, task: "find words" });
+
+    const seen = new Set();
+    const out = [];
+    for (const item of extractJson(content)) {
+      if (!item || typeof item !== "object") continue;
+      const written = typeof item.written === "string" ? item.written.trim() : "";
+      if (/\s/.test(written) || /\s/.test(String(item.word || "").trim())) continue; // a phrase, not one word
+      const word = fold(item.word || written);
+      if (!/^[a-z]{3,24}$/.test(word) || seen.has(word)) continue;
+      const extras = cleanExtras(word, item);
+      const whole = new RegExp(`\\b${word}\\b`, "i");
+      const rawHint = typeof item.hint === "string" ? item.hint.trim() : "";
+      const hint = rawHint && rawHint.length <= 240 && !whole.test(rawHint) ? rawHint : "";
+      if (!hint && !extras.meaning) continue; // nothing to show the learner about it
+      seen.add(word);
+      // Keep the original spelling visible when it differs from the plain letters (accents, unusual capitals).
+      const plainCaps = word.charAt(0).toUpperCase() + word.slice(1);
+      const kind = noPipes(item.origin).slice(0, 60);
+      const showWritten = written && fold(written) === word && written !== word && written !== plainCaps ? noPipes(written).slice(0, 40) : "";
+      const origin = [kind, showWritten].filter(Boolean).join(" · ");
+      const lang = typeof item.lang === "string" && /^[a-z]{2,3}$/.test(item.lang.trim().toLowerCase()) ? item.lang.trim().toLowerCase() : "";
+      out.push({ word, hint: hint || extras.meaning.split("|")[1].trim().slice(0, 240), ...(origin ? { origin } : {}), ...(lang ? { lang } : {}), ...extras });
+      if (out.length === 6) break;
+    }
+    if (!out.length) throw new Error("No words to add from that answer. Ask about a word or a name first.");
+    return out;
+  }
+
+  // One turn of the free-form word chat. `messages` is the whole conversation to send, system prompt
+  // first (chat.js builds it). A lower temperature than word generation: answers about spelling and
+  // meaning should be steady, not inventive. Resolves to the reply text.
+  async function chat(messages, { signal } = {}) {
+    const content = await callOpenRouter(messages, { signal, temperature: 0.4, maxTokens: 700, timeoutMs: 30000, task: "answer" });
+    return content.trim();
+  }
+
   window.SpellAI = {
     loadConfig,
     saveConfig,
@@ -302,6 +373,9 @@
     enrichWords,
     ENRICH_BATCH,
     explainMistake,
+    chat,
+    suggestWords,
+    fold,
     DEFAULT_MODEL,
   };
 })();

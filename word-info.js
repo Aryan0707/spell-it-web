@@ -5,6 +5,8 @@
   "use strict";
 
   const DETAIL_FIELDS = ["examples", "meaning", "sounds"];
+  // Fields a list keeps when its words are rebuilt from text (editing a list).
+  const KEEP_FIELDS = [...DETAIL_FIELDS, "origin", "lang", "pack"];
 
   function builtIn(entry) {
     const list = typeof WORD_LIST !== "undefined" ? WORD_LIST : [];
@@ -22,8 +24,15 @@
     return list.filter((s) => typeof s === "string" && s.length <= 200 && s.split("{word}").length === 2);
   }
 
+  // Names and places are capitalised in running text; the stored form is lowercase like every other word.
+  function shownWord(entry) {
+    const meaning = window.SpellMeanings && window.SpellMeanings.forEntry(entry);
+    return meaning && /name$/i.test(meaning.pos) ? entry.word.charAt(0).toUpperCase() + entry.word.slice(1) : entry.word;
+  }
+
   function forEntry(entry) {
     return {
+      origin: (entry && typeof entry.origin === "string" && entry.origin) || "",
       hint: (entry && entry.hint) || "",
       meaning: (window.SpellMeanings && window.SpellMeanings.forEntry(entry)) || null,
       guide: (window.SpellSounds && window.SpellSounds.forEntry(entry)) || null,
@@ -44,6 +53,19 @@
   function sentenceText(sentence, word) {
     const [before, after] = sentence.split("{word}");
     return before + (before ? word : word.charAt(0).toUpperCase() + word.slice(1)) + after;
+  }
+
+  // Spelling-bee audio: the word, what kind of word it is, a sentence that uses it, then the word
+  // again. It is only ever spoken. Printing the sentence during a round would spell the word out.
+  // `index` picks the example, so each tap can give a different sentence. Empty when the word has
+  // no example to use (custom-list words, AI words without examples).
+  function spokenInSentence(entry, index = 0) {
+    const sentences = examplesOf(entry);
+    if (!sentences.length) return "";
+    const meaning = window.SpellMeanings && window.SpellMeanings.forEntry(entry);
+    const kind = meaning && meaning.pos ? `${meaning.pos.replace(/\s*\/\s*/g, " or ")}. ` : "";
+    const sentence = sentenceText(sentences[Math.abs(index) % sentences.length], shownWord(entry));
+    return `${entry.word}. ${kind}${sentence} ${entry.word}.`;
   }
 
   const SPEAKER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 9 3 15 8 15 13 20 13 4 8 9 3 9"></polygon><path d="M16 9a5 5 0 0 1 0 6"></path><path d="M19.5 6a9 9 0 0 1 0 12"></path></svg>';
@@ -102,9 +124,9 @@
   function keepDetails(oldEntry, newEntry) {
     if (!oldEntry || oldEntry.word !== newEntry.word) return newEntry;
     const kept = { ...newEntry };
-    for (const field of DETAIL_FIELDS) if (kept[field] === undefined && oldEntry[field] !== undefined) kept[field] = oldEntry[field];
+    for (const field of KEEP_FIELDS) if (kept[field] === undefined && oldEntry[field] !== undefined) kept[field] = oldEntry[field];
     return kept;
   }
 
-  window.SpellWordInfo = { forEntry, examplesOf, sentenceNodes, sentenceText, listenButton, needsDetails, gatherDetails, mergeDetails, keepDetails };
+  window.SpellWordInfo = { forEntry, shownWord, examplesOf, sentenceNodes, sentenceText, spokenInSentence, listenButton, needsDetails, gatherDetails, mergeDetails, keepDetails };
 })();

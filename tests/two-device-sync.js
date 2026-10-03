@@ -6,25 +6,29 @@ async page => {
   try {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
+    await page.locator('#nav-me').click();
     await page.locator('#btn-lists').click();
     await page.locator('#list-name').fill('From laptop');
     await page.locator('#list-words').fill('cat, dog');
     await page.locator('#list-form button[type=submit]').click();
     await page.locator('#screen-lists .feature-back').click();
-    await page.locator('#nav-settings').click();
+    await page.locator('#nav-me').click();
+    await page.locator('#btn-me-settings').click();
     await page.locator('#btn-sync').click();
     await page.locator('#btn-enable-sync').click();
     await page.waitForFunction(() => document.getElementById('sync-status').textContent.includes('Synced'));
     const code = await page.locator('#sync-code').inputValue();
     assert(code.length === 64, 'First device creates a private sync code');
     await other.goto(base);
-    await other.locator('#nav-settings').click();
+    await other.locator('#nav-me').click();
+    await other.locator('#btn-me-settings').click();
     await other.locator('#btn-sync').click();
     await other.locator('#sync-code').fill(code);
     await other.locator('#btn-link-sync').click();
     await other.waitForFunction(() => window.SpellLearning.lists().some(l => l.name === 'From laptop'));
     await other.locator('#btn-sync-back').click();
     await other.locator('#btn-settings-back').click();
+    await other.locator('#nav-me').click();
     await other.locator('#btn-lists').click();
     assert((await other.locator('#saved-lists').textContent()).includes('From laptop'), 'Second device receives first list');
 
@@ -37,6 +41,7 @@ async page => {
     await other.locator('#screen-lists .feature-back').click();
     await page.locator('#btn-sync-back').click();
     await page.locator('#btn-settings-back').click();
+    await page.locator('#nav-me').click();
     await page.locator('#btn-lists').click();
     await page.locator('#list-name').fill('Offline laptop words');
     await page.locator('#list-words').fill('apple, chair');

@@ -15,7 +15,9 @@ async page => {
     }, { extra, srs });
     await page.reload();
     await page.locator('#btn-start').waitFor();
+    await page.locator('#nav-practice').click();
     await page.locator('#mode-read').click();
+    await page.locator('#nav-today').click();
   };
   const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('spellit_v1')));
   const word = () => page.locator('#study-word').textContent();
@@ -35,13 +37,26 @@ async page => {
   await page.locator('#btn-skip').click();
   await page.waitForTimeout(1400);
   assert((await page.locator('#round-result-text').textContent()).includes(missed.toUpperCase()), 'Correction must persist');
+  assert((await page.locator('#round-result-text').textContent()).includes('come back'), 'A skipped word promises a second look');
   await page.locator('#btn-next-word').click();
-  for (let i = 0; i < 4; i++) {
-    await page.locator('#study-overlay.show').waitFor();
-    await answer();
+  // The skipped word returns as a "second look" a few words later: one extra round, no study
+  // card (it must be recalled, not copied), and it never touches the score.
+  assert((await page.locator('#session-position').textContent()).endsWith('of 6'), 'A miss adds one second-look round');
+  let secondLooks = 0;
+  for (let i = 0; i < 5; i++) {
+    if (await page.locator('#study-overlay.show').count()) {
+      await answer();
+    } else {
+      assert((await page.locator('#session-position').textContent()).startsWith('Second look'), 'Only a second look skips the study card');
+      secondLooks++;
+      await page.locator('#typed-input').fill(missed);
+      await page.locator('#btn-typed-check').click();
+    }
     await page.locator('#btn-next-word').click();
   }
+  assert(secondLooks === 1, 'The missed word comes back exactly once');
   await page.locator('#screen-summary.active').waitFor();
+  assert((await page.locator('#summary-correct').textContent()) === '4/5', 'A second look never counts toward the session score');
   assert((await saved()).sessionsCompleted === 1, 'Completed session counted once');
   await page.locator('#btn-retry-missed').click();
   assert((await page.locator('#session-position').textContent()) === 'Review 1 of 1', 'Retry uses actual queue length');
@@ -57,7 +72,8 @@ async page => {
     colour: dueRecord,
     zephyr: { ...dueRecord, dueAt: 2, entry: { word: 'zephyr', hint: 'A gentle breeze.' } },
   });
-  await page.locator('#nav-progress').click();
+  await page.locator('#nav-me').click();
+  await page.locator('#btn-me-progress').click();
   await page.locator('#btn-history-review').click();
   assert((await word()).toLowerCase() === 'colour', 'Keep saved variant');
   await answer();
@@ -99,6 +115,7 @@ async page => {
 
   // Clearing tiles before deferred answer validation must not crash.
   await reset({ spellit_input_mode: 'tiles' }, { cat: dueRecord });
+  await page.locator('#nav-practice').click();
   await page.locator('#btn-review-due').click();
   await page.locator('#btn-study-ready').click();
   await page.evaluate(() => {
@@ -116,6 +133,7 @@ async page => {
 
   // Correcting a typed mistake pauses for feedback and is not a perfect session.
   await reset({}, { cat: dueRecord });
+  await page.locator('#nav-practice').click();
   await page.locator('#btn-review-due').click();
   await page.locator('#btn-study-ready').click();
   await page.locator('#typed-input').fill('kat');
@@ -125,8 +143,15 @@ async page => {
   await page.locator('#btn-typed-check').click();
   await page.locator('#round-result:not(.hidden)').waitFor();
   await page.locator('#btn-next-word').click();
+  // The corrected word comes back for a second look before the session ends. It is practice only.
+  assert((await page.locator('#session-position').textContent()).startsWith('Second look'), 'Corrected mistake returns for a second look');
+  await page.locator('#typed-input').fill('cat');
+  await page.locator('#btn-typed-check').click();
+  await page.locator('#round-result:not(.hidden)').waitFor();
+  await page.locator('#btn-next-word').click();
+  await page.locator('#screen-summary.active').waitFor();
   assert((await page.locator('#summary-title').textContent()) !== 'Perfect Session!', 'Corrected mistakes are not perfect');
-  assert((await saved()).srs.cat.reps === 0, 'Mistaken word stays due');
+  assert((await saved()).srs.cat.reps === 0, 'Mistaken word stays due; a second look does not advance it');
   assert(errors.length === 0, `Browser errors: ${errors.join('; ')}`);
   await page.locator('#btn-summary-done').click();
   return { passed: 7, browserErrors: errors };

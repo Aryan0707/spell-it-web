@@ -24,6 +24,10 @@
     lists: el("screen-lists"),
     notebook: el("screen-notebook"),
     sync: el("screen-sync"),
+    chat: el("screen-chat"),
+    learn: el("screen-learn"),
+    practice: el("screen-practice"),
+    me: el("screen-me"),
   };
 
   const ui = {
@@ -77,6 +81,11 @@
     studyOverlay: el("study-overlay"),
     studyWord: el("study-word"),
     studyHint: el("study-hint"),
+    studyOrigin: el("study-origin"),
+    studyNoteToggle: el("btn-study-note"),
+    studyNoteBox: el("study-note-box"),
+    studyNoteInput: el("study-note-input"),
+    studyNoteStatus: el("study-note-status"),
     studyMeaning: el("study-meaning"),
     studyPos: el("study-pos"),
     studyDef: el("study-def"),
@@ -85,6 +94,7 @@
     studyExamples: el("study-examples"),
     btnStudyListen: el("btn-study-listen"),
     btnTypedListen: el("btn-typed-listen"),
+    btnSentence: el("btn-sentence"),
     btnStudyReady: el("btn-study-ready"),
     inputToggleElevenlabs: el("input-toggle-elevenlabs"),
     inputElevenlabsKey: el("input-elevenlabs-key"),
@@ -160,7 +170,7 @@
     ui.statDue.textContent = countDueToday();
     const due = getDueEntries().length;
     ui.btnReviewDue.classList.toggle("hidden", !due);
-    ui.btnReviewDue.textContent = `Review ${due} due ${due === 1 ? "word" : "words"} →`;
+    ui.btnReviewDue.querySelector("strong").textContent = `Review ${due} due ${due === 1 ? "word" : "words"}`;
     renderLearningPath();
   }
 
@@ -179,6 +189,7 @@
       const row = document.createElement("li");
       row.className = `path-level${current ? " current" : ""}${done === lessons.length ? " complete" : ""}`;
       if (current) row.setAttribute("aria-current", "step");
+      row.style.setProperty("--p", lessons.length ? done / lessons.length : 0);
       const heading = document.createElement("strong");
       heading.textContent = `${level}. ${["Beginner", "Easy", "Medium", "Hard", "Expert"][level - 1]}`;
       const detail = document.createElement("span");
@@ -219,7 +230,7 @@
     if (session.active || aiGeneration) return;
     if (!SpellAI.isEnabled()) {
       openSettings();
-      ui.settingsStatus.textContent = "Add your OpenRouter API key, turn on AI-generated words, then Save. Return home to start an AI lesson.";
+      ui.settingsStatus.textContent = "Add your OpenRouter API key, turn on AI-generated words, then Save. Then come back to Learn to start an AI lesson.";
       ui.inputApiKey.focus();
       return;
     }
@@ -370,20 +381,25 @@
     return SRS.weight(data.srs[word], Date.now());
   }
 
-  function updateSrsOnResult(word, wasClean) {
+  function updateSrsOnResult(word, outcome) {
     const prev = data.srs[word];
     const canBump = window.SpellCoach ? window.SpellCoach.canIncrementMastery : null;
     const next = SRS.schedule({
       rec: prev,
-      wasClean,
-      nearMiss: !wasClean && !round.assisted && SRS.isNearMiss(word, round.attempts),
+      // `outcome` comes from SpellScoring.scoreRound(). Scheduling keys off
+      // countsForRecall / neutral, NOT the visible `independent` score: a correct
+      // multiple-choice answer is recognition, so it leaves the schedule untouched
+      // instead of promoting the word to Learned or Mastered.
+      wasClean: outcome.countsForRecall,
+      neutral: outcome.neutral,
+      nearMiss: !outcome.countsForRecall && !round.assisted && !outcome.neutral && SRS.isNearMiss(word, round.attempts),
       now: Date.now(),
       word,
       canBumpMastery: canBump || undefined,
     });
     // Preserve fields the scheduler doesn't own.
-    const { _source, ...cleanEntry } = round.entry;
-    next.entry = cleanEntry;
+    const { _source, _retest, ...cleanEntry } = round.entry;
+    next.entry = SpellLearning.slim ? SpellLearning.slim(cleanEntry) : cleanEntry; // a pack word is kept once, in its pack file
     const previousAssisted = prev && prev.assistedReviews ? prev.assistedReviews : 0;
     if (round.assisted) next.assistedReviews = previousAssisted + 1;
     else if (previousAssisted) next.assistedReviews = previousAssisted;
@@ -465,14 +481,32 @@
   let deviceUtterance = null; // also keeps a reference: Chrome can garbage-collect a playing utterance and never fire onend
   let deviceSpeechToken = 0;
 
-  function speakDevice(text, isRetry = false) {
+  // Words kept in their own language (saudade, hygge) are said by a voice for that language when the
+  // device has one. Looked up by the word being spoken, from the built-in packs and saved lists.
+  let languageIndex = null;
+  window.addEventListener("spellit-change", () => { languageIndex = null; });
+  function languageOf(text) {
+    if (!languageIndex) {
+      languageIndex = new Map();
+      for (const list of window.SpellLearning ? SpellLearning.lists() : []) for (const e of list.entries) if (e.lang) languageIndex.set(e.word, e.lang);
+    }
+    const key = String(text).trim().toLowerCase();
+    return languageIndex.get(key) || (window.SpellPacks ? SpellPacks.lang(key) : "");
+  }
+  function nativeVoice(lang) {
+    if (!lang || !("speechSynthesis" in window)) return null;
+    const voices = window.speechSynthesis.getVoices().filter((v) => v.lang && v.lang.toLowerCase().replace("_", "-").startsWith(lang));
+    return voices.sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
+  }
+
+  function speakDevice(text, isRetry = false, voiceOverride = null) {
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
     const token = ++deviceSpeechToken;
     const start = () => {
       if (token !== deviceSpeechToken) return; // a newer request replaced this one
       const utter = new SpeechSynthesisUtterance(text);
-      const voice = pickBestVoice();
+      const voice = voiceOverride || pickBestVoice();
       if (voice) {
         utter.voice = voice;
         utter.lang = voice.lang;
@@ -498,7 +532,7 @@
         if (started || deviceUtterance !== utter) return;
         if (isRetry) { setSpeechButtonsSpeaking(false); return; }
         synth.cancel();
-        speakDevice(text, true);
+        speakDevice(text, true, voiceOverride);
       }, 2500);
     };
     // Chrome drops an utterance spoken in the same tick as cancel(), so wait a moment after one.
@@ -530,6 +564,8 @@
   // device voice. Any engine that fails, or is not ready yet, hands that one word to the next.
   function speak(text) {
     const requestId = ++speechRequestId;
+    const own = nativeVoice(languageOf(text));
+    if (own) { speakDevice(text, false, own); return; }
     const engine = window.SpellTTS && SpellTTS.isEnabled()
       ? { name: "ElevenLabs", run: () => SpellTTS.speak(text) }
       : window.SpellNeural && SpellNeural.isEnabled()
@@ -782,7 +818,7 @@
   }
 
   function getReviewEntry(word) {
-    const saved = data.srs[word]?.entry;
+    const saved = SpellLearning.hydrate(data.srs[word]?.entry);
     const entry = saved || WORD_LIST.find((w) => w.word === word || Object.values(w.variants || {}).includes(word));
     return { ...(entry || {}), word, hint: entry?.hint || "Listen to the word, then spell it." };
   }
@@ -803,51 +839,18 @@
   }
 
   // ---------- multiple choice: plausible wrong-spelling distractors ----------
-  function corruptWord(word) {
-    const w = word.split("");
-    const i = Math.floor(Math.random() * w.length);
-    const type = Math.floor(Math.random() * 4);
-    const vowels = "aeiou";
-    if (type === 0 && w.length > 3) {
-      const j = Math.min(i + 1, w.length - 1);
-      [w[i], w[j]] = [w[j], w[i]]; // swap adjacent letters
-    } else if (type === 1) {
-      w.splice(i, 0, w[i]); // double a letter
-    } else if (type === 2 && w.length > 4) {
-      w.splice(i, 1); // drop a letter
-    } else if (vowels.includes(w[i])) {
-      let repl;
-      do {
-        repl = vowels[Math.floor(Math.random() * vowels.length)];
-      } while (repl === w[i]);
-      w[i] = repl; // swap a vowel
-    } else {
-      w.splice(i, 0, w[i]); // fallback: double a letter
-    }
-    return w.join("");
-  }
-
-  function generateDistractors(word, count) {
-    const seen = new Set([word]);
-    const result = [];
-    let attempts = 0;
-    while (result.length < count && attempts < 40) {
-      attempts++;
-      const candidate = corruptWord(word);
-      if (!seen.has(candidate)) {
-        seen.add(candidate);
-        result.push(candidate);
-      }
-    }
-    while (result.length < count) {
-      result.push(word + "x".repeat(result.length + 1));
-    }
-    return result;
-  }
+  // Both helpers now live in scoring.js as SpellScoring.corruptWord /
+  // SpellScoring.buildDistractors, where they are unit-tested. They are re-exported
+  // here only so existing call sites and browser regression scripts keep working.
+  const corruptWord = (word) => SpellScoring.corruptWord(word);
+  const generateDistractors = (word, count) => SpellScoring.buildDistractors({ word }, count);
 
   function renderChoices(entry) {
     const word = entry.word;
-    const options = shuffleArray([word, ...generateDistractors(word, 3)]);
+    // Pass the whole entry, not just the word: SpellScoring.buildDistractors uses the
+    // `rule` tag to offer the misspelling that rule actually produces (receive ->
+    // recieve), instead of a random swap unrelated to what the learner was taught.
+    const options = shuffleArray([word, ...SpellScoring.buildDistractors(entry, 3)]);
     ui.choiceRow.innerHTML = "";
     for (const opt of options) {
       const btn = document.createElement("button");
@@ -902,11 +905,50 @@
       assisted: false,
       hintLevel: 0,
       proofSelected: false,
+      retest: !!entry._retest,
     };
+  }
+
+  // ---------- second looks ----------
+  // A word missed in a free/review session returns a few words later (SRS.relearnGap). Only
+  // sessions that aren't a graded course check, a daily five or an assessment get them, because
+  // those record one result per word.
+  const RELEARN_KINDS = ["practice", "review", "custom"];
+
+  // Queue a second look for `entry`. Called after session.index has moved to the NEXT round.
+  // Returns true when one was queued.
+  function scheduleRelearn(entry) {
+    if (!RELEARN_KINDS.includes(session.kind)) return false;
+    session.relearnCounts ||= {};
+    const done = session.relearnCounts[entry.word] || 0;
+    const gap = SRS.relearnGap(done);
+    if (gap === undefined) return false;
+    session.relearnCounts[entry.word] = done + 1;
+    const retest = { ...entry, _retest: true };
+    // gap=3 means two other words in between: this round was index-1, the retest is index+2.
+    const slot = Math.min(session.index + gap - 1, session.length);
+    session.length += 1;
+    if (session.reviewWords) {
+      // Copy so a caller's array (e.g. the due list) is never mutated.
+      const list = session.reviewWords.slice();
+      list.splice(slot, 0, retest);
+      session.reviewWords = list;
+    } else {
+      (session.retests ||= []).push({ dueIndex: Math.min(slot, session.length - 1), entry: retest });
+    }
+    return true;
+  }
+
+  function takeDueRetest() {
+    const queue = session.retests;
+    const i = queue ? queue.findIndex((r) => r.dueIndex <= session.index) : -1;
+    return i === -1 ? null : queue.splice(i, 1)[0].entry;
   }
 
   function nextEntry() {
     if (session.reviewWords) return session.reviewWords[session.index];
+    const retest = takeDueRetest();
+    if (retest) return retest;
     if (session.aiWords && session.aiIndex < session.aiWords.length) {
       const entry = applyVariant(session.aiWords[session.aiIndex++]);
       session.seenWords.add(entry.word);
@@ -947,7 +989,7 @@
     ui.feedbackBanner.className = "feedback-banner";
     const entry = nextEntry();
     round = buildRound(entry);
-    const prefix = isLearningLesson() ? (session.pathPhase === "learn" ? "Learn" : "Final check") : session.kind === "proofread" ? "Sentence" : session.kind === "daily" ? "Daily word" : session.reviewWords ? "Review" : "Word";
+    const prefix = round.retest ? "Second look" : isLearningLesson() ? (session.pathPhase === "learn" ? "Learn" : "Final check") : session.kind === "proofread" ? "Sentence" : session.kind === "daily" ? "Daily word" : session.reviewWords ? "Review" : "Word";
     ui.sessionPosition.textContent = `${prefix} ${session.index + 1} of ${session.length}${session.title ? ` · ${session.title}` : ""}`;
     ui.btnSkip.disabled = false;
     ui.btnSkip.classList.toggle("hidden", isLearningLesson() && session.pathPhase === "learn");
@@ -956,6 +998,9 @@
     ui.hintText.textContent = "";
     el("btn-hint").disabled = false;
     el("btn-hint").textContent = "Need a hint?";
+    // Audio-only, spelling-bee style. It is not a hint: it is the same word the learner already hears.
+    ui.btnSentence.disabled = false;
+    ui.btnSentence.classList.toggle("hidden", session.kind === "proofread" || !SpellWordInfo.spokenInSentence(entry));
     el("btn-learn-word").classList.toggle("hidden", !isLearningLesson());
     el("btn-learn-word").disabled = false;
     el("hint-level").textContent = "";
@@ -981,7 +1026,8 @@
       ui.typedInputRow.classList.remove("show");
       renderProofread(entry);
       if (timedMode && !isLearningLesson()) startRoundTimer();
-    } else if (practiceMode === "read" && !session.forceListen) {
+    } else if (practiceMode === "read" && !session.forceListen && !round.retest) {
+      // (A second look skips the study card: showing the spelling would turn recall into copying.)
       ui.studyWord.textContent = entry.word.toUpperCase();
       ui.studyHint.textContent = entry.hint || "";
       renderStudyMeaning(entry);
@@ -991,6 +1037,11 @@
     } else {
       ui.studyOverlay.classList.remove("show");
       afterRoundDelay(() => speak(entry.word), 350);
+      // Have the natural voice ready before "Hear it in a sentence" is pressed.
+      afterRoundDelay(() => {
+        const text = SpellWordInfo.spokenInSentence(entry);
+        if (text && window.SpellNeural && SpellNeural.isEnabled()) SpellNeural.prefetch([text]);
+      }, 1500);
       if (answerMode() === "type") afterRoundDelay(() => ui.typedInput.focus(), 400);
       if (timedMode && !isLearningLesson()) startRoundTimer();
     }
@@ -998,7 +1049,30 @@
 
   // Built-in words have a part of speech, definition and related words in meanings.js. It takes the
   // place of the one-line hint on the study card; custom-list and AI words keep showing their hint.
+  // A note of your own on the word you are looking at: why you like it, or a trick that works for you.
+  // It saves as you type and lives in the Spelling notebook, so it comes back next time.
+  let noteTimer = 0;
+  let noteEntry = null;
+  function renderStudyNote(entry) {
+    clearTimeout(noteTimer);
+    noteEntry = entry;
+    const existing = entry ? SpellLearning.noteFor(entry.word) : "";
+    ui.studyNoteInput.value = existing;
+    ui.studyNoteStatus.textContent = "";
+    ui.studyNoteBox.classList.toggle("hidden", !existing);
+    ui.studyNoteToggle.classList.toggle("hidden", !!existing);
+  }
+  function saveStudyNote() {
+    if (!noteEntry) return;
+    SpellLearning.saveNote(noteEntry.word, ui.studyNoteInput.value, noteEntry);
+    ui.studyNoteStatus.textContent = "Saved to your notebook";
+  }
+
   function renderStudyMeaning(entry) {
+    renderStudyNote(entry);
+    const origin = entry && typeof entry.origin === "string" ? entry.origin : "";
+    ui.studyOrigin.textContent = origin;
+    ui.studyOrigin.classList.toggle("hidden", !origin);
     const meaning = window.SpellMeanings?.forEntry(entry);
     ui.studyMeaning.classList.toggle("hidden", !meaning);
     ui.studyHint.classList.toggle("hidden", !!meaning);
@@ -1022,14 +1096,15 @@
     ui.studyExamplesWrap.classList.toggle("hidden", !sentences.length);
     for (const sentence of sentences) {
       const li = document.createElement("li");
-      const spoken = SpellWordInfo.sentenceText(sentence, entry.word);
-      li.append(...SpellWordInfo.sentenceNodes(sentence, entry.word),
+      const display = SpellWordInfo.shownWord(entry);
+      const spoken = SpellWordInfo.sentenceText(sentence, display);
+      li.append(...SpellWordInfo.sentenceNodes(sentence, display),
         SpellWordInfo.listenButton("Listen to this example", () => speak(spoken)));
       ui.studyExamples.append(li);
     }
     // Have the natural voice ready before the learner presses a speaker button.
     if (sentences.length && window.SpellNeural && SpellNeural.isEnabled()) {
-      SpellNeural.prefetch(sentences.map((s) => SpellWordInfo.sentenceText(s, entry.word)));
+      SpellNeural.prefetch(sentences.map((s) => SpellWordInfo.sentenceText(s, SpellWordInfo.shownWord(entry))));
     }
   }
 
@@ -1313,12 +1388,27 @@
       showRoundResult(`You recalled ${word.toUpperCase()}. We'll check it again after learning the lesson's words.`);
       return;
     }
+    if (round.retest) {
+      // Practice only: no score, streak, schedule or coach change. The word was already marked
+      // as a lapse when it was missed; this is the second retrieval that makes the fix stick.
+      feedbackCorrect();
+      showFeedback("good", "Correct!");
+      session.index += 1;
+      const again = (round.hadError || round.assisted) && scheduleRelearn(round.entry);
+      ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
+      if (!round.hadError && !round.assisted) showRoundResult(`Second look: ${word.toUpperCase()} ✓ You've got it.`);
+      else showRoundResult(`${word.toUpperCase()} — not quite from memory yet.${again ? " It'll come back once more." : " It's saved for your next review."}`);
+      return;
+    }
     if (!round.hadError && data.missed[word]) {
       data.missed[word] = Math.max(0, data.missed[word] - 1);
     }
     if (!data.learned.includes(word)) data.learned.push(word);
 
-    const independent = !round.hadError && !round.assisted;
+    // One place decides what a round means: SpellScoring.scoreRound() reads the active
+    // answer mode, so multiple choice is scored as recognition rather than recall.
+    const outcome = SpellScoring.scoreRound({ answerMode: answerMode(), hadError: round.hadError, assisted: round.assisted });
+    const independent = outcome.independent;
     data.curStreak = independent ? data.curStreak + 1 : 0;
     if (data.curStreak > data.bestStreak) data.bestStreak = data.curStreak;
     session.bestStreakThisSession = Math.max(session.bestStreakThisSession, data.curStreak);
@@ -1335,7 +1425,7 @@
     saveData();
 
     const before = data.srs[word];
-    updateSrsOnResult(word, independent);
+    updateSrsOnResult(word, outcome);
     const after = data.srs[word];
     const reachedMilestone = (!SRS.isLearned(before) && SRS.isLearned(after)) || (!SRS.isMastered(before) && SRS.isMastered(after));
     if (reachedMilestone && !session.milestonesThisSession.includes(word)) session.milestonesThisSession.push(word);
@@ -1362,10 +1452,11 @@
     }
 
     session.index += 1;
+    const comingBack = (round.hadError || round.assisted) && scheduleRelearn(round.entry);
     ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
 
-    if (round.assisted) showRoundResult(`Correct with a hint: ${word.toUpperCase()}. Try it independently next time.`);
-    else if (round.hadError) showRoundResult(`You got it: ${word.toUpperCase()}. We'll practise this word again.`);
+    if (round.assisted) showRoundResult(`Correct with a hint: ${word.toUpperCase()}. ${comingBack ? "It'll come back in a few words — try it from memory." : "Try it independently next time."}`);
+    else if (round.hadError) showRoundResult(`You got it: ${word.toUpperCase()}. ${comingBack ? "It'll come back in a few words." : "We'll practise this word again."}`);
     else showRoundResult(`Correct spelling: ${word.toUpperCase()}`);
   }
 
@@ -1376,6 +1467,17 @@
     round.hadError = true;
     const word = round.entry.word;
     if (attemptText) round.attempts.push(attemptText);
+    if (round.retest) {
+      // Second look given up on: show the answer and try once more later (if allowed). Nothing
+      // is scored; the miss that created this second look has already reset the schedule.
+      feedbackWrong();
+      showFeedback("bad", `Answer: ${word.toUpperCase()}`);
+      session.index += 1;
+      const again = scheduleRelearn(round.entry);
+      ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
+      showRoundResult(`Correct spelling: ${word.toUpperCase()}${again ? ". It'll come back once more." : ""}`);
+      return;
+    }
     SpellLearning.recordAttempt(round.entry, attemptText === "(timeout)" ? "Time ran out" : attemptText || "Skipped");
     if (round.assisted) session.assistedCount++;
     if (session.kind === "daily") SpellLearning.dailyResult(session.date, round.entry, { clean: false, assisted: round.assisted });
@@ -1401,9 +1503,10 @@
     requestTutorFeedback(round);
 
     session.index += 1;
+    const comingBack = scheduleRelearn(round.entry);
     ui.progressFill.style.width = `${(session.index / session.length) * 100}%`;
 
-    showRoundResult(`Correct spelling: ${word.toUpperCase()}`);
+    showRoundResult(`Correct spelling: ${word.toUpperCase()}${comingBack ? ". Look closely: it'll come back in a few words." : ""}`);
   }
 
   function showRoundResult(text) {
@@ -1416,6 +1519,7 @@
     ui.typedInput.disabled = true;
     ui.btnTypedCheck.disabled = true;
     el("btn-hint").disabled = true;
+    ui.btnSentence.disabled = true;
     el("btn-learn-word").disabled = true;
     if (isLearningLesson() && session.pathPhase === "learn" && session.index >= session.length) {
       ui.btnNextWord.textContent = "Start final check →";
@@ -1518,16 +1622,18 @@
 
   // ---------- navigation ----------
   function showScreen(name) {
-    if (name !== "home" && aiGeneration) cancelAILesson();
+    if (name !== "learn" && aiGeneration) cancelAILesson();
     for (const key in screens) screens[key].classList.toggle("active", key === name);
-    // Update bottom nav active state
+    // Pages opened from the You tab keep that tab lit.
+    const tab = { lists: "me", notebook: "me", history: "me", settings: "me", sync: "me" }[name] || name;
     document.querySelectorAll(".bottom-nav-item").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.screen === name);
+      btn.classList.toggle("active", btn.dataset.screen === tab);
     });
     // Render content for certain screens
     if (name === "lists" && window.SpellFeatures && SpellFeatures.renderLists) SpellFeatures.renderLists();
-    if (name === "home" && window.SpellFeatures) SpellFeatures.renderDaily();
-    if (name === "home") renderLearningPath();
+    if ((name === "practice" || name === "home") && window.SpellFeatures) SpellFeatures.renderDaily();
+    if (name === "home" || name === "learn") renderLearningPath();
+    if (name === "learn") window.SpellPacks?.render();
     if (!session.active) window.SpellSync?.schedule();
   }
 
@@ -1535,7 +1641,7 @@
     const inputLabel = { tiles: "Letter tiles", type: "Type it", choice: "Multiple choice" }[inputMode];
     const difficultyLabel = currentDifficulty === "all" ? "All levels" : currentDifficulty;
     el("practice-summary").textContent = `${SESSION_LENGTH} words · ${inputLabel} · ${difficultyLabel}${timedMode ? " · Timed" : ""}`;
-    for (const button of screens.home.querySelectorAll(".chip, .mode-btn")) {
+    for (const button of screens.practice.querySelectorAll(".chip, .mode-btn")) {
       button.setAttribute("aria-pressed", String(button.classList.contains("active")));
     }
   }
@@ -1768,15 +1874,9 @@
 
     showScreen("summary");
 
-    // Big finish: confetti storm scaled to how well they did.
-    if (window.SpellDelight && total > 0) {
-      const intensity = Math.round(60 + pct * 140);
-      setTimeout(() => {
-        const w = window.innerWidth, h = window.innerHeight;
-        window.SpellDelight._burstAt(w * 0.25, h * 0.35, Math.round(intensity * 0.5));
-        window.SpellDelight._burstAt(w * 0.75, h * 0.35, Math.round(intensity * 0.5));
-        if (pct === 1) window.SpellDelight._burstAt(w * 0.5, h * 0.25, intensity);
-      }, 250);
+    // A perfect session gets one small burst; anything less gets none.
+    if (window.SpellDelight && total > 0 && pct === 1) {
+      setTimeout(() => window.SpellDelight._burstAt(window.innerWidth / 2, window.innerHeight * 0.3, 40), 250);
     }
   }
 
@@ -1944,7 +2044,8 @@
 
   // ---------- history / progress screen ----------
   function findWordHint(word) {
-    if (data.srs[word]?.entry?.hint) return data.srs[word].entry.hint;
+    const stored = SpellLearning.hydrate(data.srs[word]?.entry);
+    if (stored?.hint) return stored.hint;
     const entry = WORD_LIST.find((w) => w.word === word || (w.variants && Object.values(w.variants).includes(word)));
     return entry ? entry.hint : "";
   }
@@ -2154,6 +2255,9 @@
 
   // ---------- wiring ----------
   ui.btnStart.addEventListener("click", () => startSession());
+  el("btn-free-practice").addEventListener("click", () => startSession());
+  el("btn-me-progress").addEventListener("click", openHistory);
+  el("btn-me-settings").addEventListener("click", openSettings);
   el("btn-path-start").addEventListener("click", () => startPathLesson());
   el("btn-ai-lesson").addEventListener("click", startAILesson);
   el("btn-ai-cancel").addEventListener("click", () => {
@@ -2166,6 +2270,30 @@
     if (document.activeElement === ui.typedInput) event.preventDefault();
   });
   ui.btnTypedListen.addEventListener("click", () => { if (session.active && round) speak(round.entry.word); });
+  // Keep the on-screen keyboard open while typing, as the Listen button does.
+  ui.btnSentence.addEventListener("pointerdown", event => {
+    if (document.activeElement === ui.typedInput) event.preventDefault();
+  });
+  ui.btnSentence.addEventListener("click", () => {
+    if (!session.active || !round || round.done) return;
+    // Each tap uses the next example sentence, so a repeat is not word for word the same.
+    const taps = round.sentenceTaps || 0;
+    const text = SpellWordInfo.spokenInSentence(round.entry, taps);
+    if (!text) return;
+    round.sentenceTaps = taps + 1;
+    speak(text);
+  });
+  ui.studyNoteToggle.addEventListener("click", () => {
+    ui.studyNoteBox.classList.remove("hidden");
+    ui.studyNoteToggle.classList.add("hidden");
+    ui.studyNoteInput.focus();
+  });
+  ui.studyNoteInput.addEventListener("input", () => {
+    ui.studyNoteStatus.textContent = "Saving…";
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(saveStudyNote, 350);
+  });
+  ui.studyNoteInput.addEventListener("blur", () => { clearTimeout(noteTimer); if (noteEntry && ui.studyNoteInput.value !== SpellLearning.noteFor(noteEntry.word)) saveStudyNote(); });
   el("study-copy").addEventListener("keydown", event => {
     if (event.key === "Enter") { event.preventDefault(); dismissStudyOverlay(); }
   });
@@ -2219,7 +2347,7 @@
   });
 
   ui.btnSettings.addEventListener("click", openSettings);
-  ui.btnSettingsBack.addEventListener("click", () => showScreen("home"));
+  ui.btnSettingsBack.addEventListener("click", () => showScreen("me"));
   ui.inputToggleSound.addEventListener("change", () => SpellSFX.setSoundEnabled(ui.inputToggleSound.checked));
   ui.inputToggleHaptic.addEventListener("change", () => SpellSFX.setHapticEnabled(ui.inputToggleHaptic.checked));
   // Dark theme is now the only theme; the toggle has been removed from the UI.
@@ -2230,7 +2358,7 @@
   }
 
   ui.btnHistory.addEventListener("click", openHistory);
-  ui.btnHistoryBack.addEventListener("click", () => showScreen("home"));
+  ui.btnHistoryBack.addEventListener("click", () => showScreen("me"));
   ui.btnPracticeAgain.addEventListener("click", () => {
     if (session.returnPath) {
       const saved = session.returnPath;
@@ -2239,7 +2367,7 @@
       });
     } else if (session.kind === "ai-lesson") {
       if (session.independentCount === session.length) {
-        showScreen("home");
+        showScreen("learn");
         startAILesson();
       } else {
         startSession(shuffleArray([...session.reviewWords]), { kind: "ai-lesson", pathPhase: "check", title: session.title, fullLength: true });
@@ -2286,10 +2414,8 @@
   document.querySelectorAll(".bottom-nav-item").forEach(btn => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.screen;
-      if (target === "home") showScreen("home");
-      else if (target === "lists") showScreen("lists");
-      else if (target === "history") openHistory();
-      else if (target === "settings") openSettings();
+      if (target === "chat") SpellChat.open();
+      else showScreen(target);
     });
   });
 
@@ -2325,10 +2451,8 @@
           <p>Optional: answer 5 quick words to personalise free practice. Your learning path always starts at Level 1.</p>
           <button class="btn btn-primary" id="btn-start-assessment">Take level check →</button>
         `;
-        const practiceSummary = document.getElementById("practice-summary");
-        if (practiceSummary) {
-          practiceSummary.insertAdjacentElement("afterend", card);
-        }
+        const slot = document.getElementById("assessment-slot");
+        if (slot) slot.append(card);
         // Wire up assessment button
         const btn = card.querySelector("#btn-start-assessment");
         if (btn) btn.addEventListener("click", startAssessment);
@@ -2353,8 +2477,18 @@
     isBusy: () => session.active,
     replaceProgress: value => { data = value; saveData(); updateHomeStats(); },
   });
+  window.SpellPacks?.init({ start: startSession, show: showScreen, progress: () => data }); // optional: the app still starts without the packs
+  SpellChat.init({
+    show: showScreen,
+    style: () => spellingStyle,
+    openSettings: () => {
+      openSettings();
+      ui.settingsStatus.textContent = "Add your OpenRouter API key, turn on AI-generated words, then Save. Then return to Ask AI.";
+      ui.inputApiKey.focus();
+    },
+  });
   updatePracticeSummary();
-  screens.home.addEventListener("click", (event) => {
+  screens.practice.addEventListener("click", (event) => {
     if (event.target.closest(".chip, .mode-btn")) updatePracticeSummary();
   });
 

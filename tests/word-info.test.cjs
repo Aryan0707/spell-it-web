@@ -135,3 +135,39 @@ test('the sentence is spoken with the word in place and a capital when it starts
   assert.equal(info.sentenceText('{word} is a brand-new day.', 'tomorrow'), 'Tomorrow is a brand-new day.');
   assert.equal(info.sentenceText('Blue is my {word} shade.', 'favourite'), 'Blue is my favourite shade.', 'uses the learner\'s own spelling');
 });
+
+test('the spelling-bee audio says the word, its kind, a sentence, then the word again', () => {
+  const info = loadInfo();
+  assert.equal(info.spokenInSentence({ word: 'they' }, 0), 'they. pronoun. They are walking to school together. they.', 'a sentence that starts with the word gets a capital');
+  assert.equal(info.spokenInSentence({ word: 'knock' }, 0), 'knock. verb or noun. Please knock before you come in. knock.', 'a slash in the part of speech is spoken as “or”');
+  assert.equal(info.spokenInSentence({ word: 'colour' }, 0), 'colour. noun. Red is the colour of a ripe tomato. colour.', 'uses the learner\'s own spelling');
+});
+
+test('each tap can use a different example, wrapping around after the last', () => {
+  const info = loadInfo();
+  const spoken = [0, 1, 2, 3, 4].map(i => info.spokenInSentence({ word: 'friend' }, i));
+  assert.equal(new Set(spoken.slice(0, 3)).size, 3, 'three different sentences');
+  assert.equal(spoken[3], spoken[0]);
+  assert.equal(spoken[4], spoken[1]);
+  assert.equal(info.spokenInSentence({ word: 'friend' }, -1), spoken[1], 'a negative index still lands on an example');
+});
+
+test('a word with no example sentence gives no sentence audio, rather than a broken line', () => {
+  const info = loadInfo();
+  assert.equal(info.spokenInSentence({ word: 'zebra', hint: 'A striped animal' }), '');
+  assert.equal(info.spokenInSentence(null), '');
+  assert.ok(info.spokenInSentence({ word: 'zebra', examples: ['A {word} ran past.'] }).startsWith('zebra. A zebra ran past. zebra'), 'an AI word\'s own examples are used');
+});
+
+test('every built-in word yields clean sentence audio with no leftover placeholders', () => {
+  const context = vm.createContext({ window: {} });
+  for (const file of ['words.js', 'meanings.js', 'sounds.js', 'word-info.js']) vm.runInContext(readFileSync(file, 'utf8'), context);
+  vm.runInContext('this.WORDS = WORD_LIST', context);
+  const info = context.window.SpellWordInfo;
+  const problems = [];
+  for (const w of context.WORDS) for (const spelled of [w.word, ...Object.values(w.variants || {})]) {
+    const text = info.spokenInSentence({ word: spelled }, 0);
+    if (!text.startsWith(`${spelled}. `) || !text.endsWith(` ${spelled}.`) || /[{}]|undefined|null/.test(text)) problems.push(`${spelled}: ${text}`);
+  }
+  assert.deepEqual(problems, []);
+});

@@ -8,8 +8,8 @@ const projectRoot = path.resolve(__dirname, "..");
 const distPath = path.join(projectRoot, "dist");
 const publicFiles = [
   "index.html", "style.css", "coach.css", "app.js", "words.js", "ai.js", "tts.js",
-  "sfx.js", "meanings.js", "neural-voice.js", "neural-voice-worker.js", "sounds.js", "word-info.js", "pronounce.js", "learning.js", "learning-ui.js", "coach.js", "sync.js", "practice-content.js",
-  "sw.js", "manifest.json", "delight.js", "srs.js",
+  "sfx.js", "meanings.js", "neural-voice.js", "neural-voice-worker.js", "sounds.js", "word-info.js", "pronounce.js", "learning.js", "learning-ui.js", "chat.js", "packs.js", "packs-world.js", "packs-names.js", "coach.js", "sync.js", "practice-content.js",
+  "sw.js", "manifest.json", "delight.js", "srs.js", "scoring.js",
 ];
 
 async function treePaths(base, relative = "") {

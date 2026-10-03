@@ -1,34 +1,37 @@
 // Bump this on any app-shell change so clients pick up the new files
 // instead of getting stuck on a stale cache.
-const CACHE_NAME = "spellit-v36";
+const CACHE_NAME = "spellit-v57";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=36",
-  "./coach.css?v=36",
-  "./app.js?v=36",
-  "./words.js?v=36",
-  "./ai.js?v=36",
-  "./tts.js?v=36",
-  "./sfx.js?v=36",
-  "./meanings.js?v=36",
-  "./sounds.js?v=36",
-  "./word-info.js?v=36",
-  "./neural-voice.js?v=36",
+  "./style.css?v=57",
+  "./coach.css?v=57",
+  "./app.js?v=57",
+  "./words.js?v=57",
+  "./ai.js?v=57",
+  "./tts.js?v=57",
+  "./sfx.js?v=57",
+  "./meanings.js?v=57",
+  "./sounds.js?v=57",
+  "./word-info.js?v=57",
+  "./neural-voice.js?v=57",
   "./neural-voice-worker.js",
-  "./pronounce.js?v=36",
-  "./delight.js?v=36",
-  "./practice-content.js?v=36",
-  "./srs.js?v=36",
-  "./learning.js?v=36",
-  "./learning-ui.js?v=36",
-  "./coach.js?v=36",
-  "./sync.js?v=36",
+  "./pronounce.js?v=57",
+  "./delight.js?v=57",
+  "./practice-content.js?v=57",
+  "./srs.js?v=57",
+  "./scoring.js?v=57",
+  "./learning.js?v=57",
+  "./learning-ui.js?v=57",
+  "./chat.js?v=57",
+  "./packs.js?v=57",
+  "./coach.js?v=57",
+  "./sync.js?v=57",
   "./manifest.json",
-  "./icons/icon-192.png?v=36",
-  "./icons/icon-512.png?v=36",
-  "./icons/apple-touch-icon.png?v=36",
+  "./icons/icon-192.png?v=57",
+  "./icons/icon-512.png?v=57",
+  "./icons/apple-touch-icon.png?v=57",
 ];
 
 self.addEventListener("install", (event) => {
@@ -61,6 +64,8 @@ self.addEventListener("fetch", (event) => {
     }));
     return;
   }
+  // Pack data (packs-<id>.js) is deliberately not in the shell above: it is cached the first time a pack is used,
+  // by the network-first handler below, and works offline from then on.
   // Never intercept cross-origin calls (OpenRouter, ElevenLabs) — only cache our own app shell.
   if (url.origin !== self.location.origin || event.request.method !== "GET" || url.pathname.startsWith("/api/") || event.request.headers.has("Authorization")) return;
 

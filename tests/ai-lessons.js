@@ -9,7 +9,7 @@ async page => {
     speechSynthesis.speak = utter => { window.spokenWord = utter.text; };
   });
   await page.reload();
-  await page.locator('.more-section > summary').click();
+  await page.locator('#nav-learn').click();
   await page.locator('#btn-ai-lesson').click();
   assert(await page.locator('#screen-settings.active').count() === 1, 'Missing key opens settings');
   await page.locator('#input-api-key').fill('mock-key');
@@ -34,6 +34,7 @@ async page => {
     if (mode === 'error') { await route.fulfill({ status: 402, body: 'no credits' }); return; }
     try { await route.fulfill({ json: { choices: [{ message: { content: JSON.stringify(payload) } }] } }); } catch {}
   });
+  await page.locator('#nav-learn').click();
   await page.locator('#btn-ai-lesson').click();
   await page.locator('#study-overlay.show').waitFor();
   assert((await page.locator('#session-position').textContent()).includes('Learn 1 of 2'), 'Short batch uses actual length');
@@ -80,12 +81,14 @@ async page => {
   assert(requests[1].messages[1].content.includes('fern'), 'Future batch excludes previously practised words');
   assert(await page.locator('#btn-ai-lesson').isEnabled(), 'Error allows recovery');
   mode = 'delay';
+  await page.locator('#nav-learn').click();
   await page.locator('#btn-ai-lesson').click();
   while (!release) await page.waitForTimeout(20);
   await page.locator('#btn-ai-cancel').click();
   release();
   await page.waitForTimeout(250);
-  assert(await page.locator('#screen-home.active').count() === 1, 'Cancelled request cannot open a late lesson');
+  assert(await page.locator('#screen-learn.active').count() === 1, 'Cancelled request cannot open a late lesson');
+  await page.locator('#nav-learn').click();
   await page.locator('#btn-path-start').click();
   assert(await page.locator('#study-copy').isVisible(), 'Built-in course still works after errors');
   await page.locator('#btn-quit').click();

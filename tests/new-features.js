@@ -4,6 +4,7 @@ async page => {
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('spellit_practice_mode', 'read'); localStorage.setItem('spellit_input_mode', 'type'); localStorage.setItem('spellit_session_length', '5'); });
   await page.reload();
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#nav-me').click();
   await page.locator('#btn-lists').click();
   await page.locator('#list-name').fill('Friday spellings');
   await page.locator('#list-words').fill('cat | A pet that meows | cat\ncat');
@@ -29,14 +30,22 @@ async page => {
   const nextText = await page.locator('#btn-next-word').textContent();
   assert(nextText.includes('Next') || nextText.includes('results'), 'Action button shown (got: "' + nextText + '")');
   await page.locator('#btn-next-word').click();
+  // Needing a hint earns a second look from memory; it is practice and is not scored.
+  assert((await page.locator('#session-position').textContent()).startsWith('Second look'), 'Hinted word returns for a second look');
+  await page.locator('#typed-input').fill('cat');
+  await page.locator('#btn-typed-check').click();
+  await page.locator('#round-result:not(.hidden)').waitFor({ timeout: 5000 });
+  await page.locator('#btn-next-word').click();
   assert((await page.locator('#summary-assistance').textContent()).includes('0 independently · 1 with hints'), 'Assisted success reported separately');
   assert(await page.evaluate(() => JSON.parse(localStorage.getItem('spellit_v1')).srs.cat.reps) === 0, 'Hints do not advance mastery');
   await page.locator('#btn-summary-done').click();
+  await page.locator('#nav-me').click();
   await page.locator('#btn-notebook').click();
   assert((await page.locator('#notebook-list').textContent()).includes('Solved with a hint'), 'Notebook records assistance');
   await page.locator('#note-cat').fill('The cat wears a hat.');
   await page.locator('#screen-notebook .feature-back').click();
   await page.reload();
+  await page.locator('#nav-me').click();
   await page.locator('#btn-notebook').click();
   assert(await page.locator('#note-cat').inputValue() === 'The cat wears a hat.', 'Personal note persists');
   await page.locator('#screen-notebook .feature-back').click();
@@ -44,6 +53,7 @@ async page => {
     const cat = PROOFREAD_WORDS.find(w => w.word === 'cat');
     PROOFREAD_WORDS.splice(0, PROOFREAD_WORDS.length, cat);
   });
+  await page.locator('#nav-practice').click();
   await page.locator('#btn-proofread').click();
   assert(!await page.locator('#study-overlay').isVisible(), 'Proofreading does not reveal the word first');
   assert(!await page.locator('#typed-input').isVisible(), 'Must locate the mistake first');
@@ -59,6 +69,7 @@ async page => {
   await page.locator('#btn-summary-done').click();
 
   // The daily challenge freezes its words and resumes after a page refresh.
+  await page.locator('#nav-practice').click();
   await page.locator('#btn-daily').click();
   const first = (await page.locator('#study-word').textContent()).toLowerCase();
   await page.locator('#btn-study-ready').click();
@@ -69,6 +80,7 @@ async page => {
   await page.locator('#btn-quit').click();
   await page.reload();
   assert(await page.locator('#daily-count').textContent() === '1 / 5', 'Daily progress survives reload');
+  await page.locator('#nav-practice').click();
   await page.locator('#btn-daily').click();
   for (let i = 0; i < 4; i++) {
     const word = (await page.locator('#study-word').textContent()).toLowerCase();
@@ -86,7 +98,8 @@ async page => {
 
   // Download contains no API credentials and import is validated before merging.
   await page.evaluate(() => localStorage.setItem('spellit_ai_config', JSON.stringify({ apiKey: 'SECRET-NOT-FOR-BACKUP', useAI: false })));
-  await page.locator('#nav-settings').click();
+  await page.locator('#nav-me').click();
+  await page.locator('#btn-me-settings').click();
   await page.locator('#btn-sync').click();
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#btn-export').click();
@@ -104,7 +117,8 @@ async page => {
   await page.evaluate(() => { window.confirm = () => true; });
   await page.locator('#btn-reset').click();
   assert(await page.evaluate(() => SpellLearning.lists().length) === 0, 'Reset clears saved lists');
-  await page.locator('#nav-settings').click();
+  await page.locator('#nav-me').click();
+  await page.locator('#btn-me-settings').click();
   await page.locator('#btn-sync').click();
   await page.locator('#backup-file').setInputFiles('/private/tmp/spellit-feature-backup.json');
   await page.locator('#btn-import').click();

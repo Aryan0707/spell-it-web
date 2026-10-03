@@ -129,3 +129,12 @@ test("interval caps at MAX_INTERVAL_DAYS", () => {
   rec = SRS.schedule({ rec, wasClean: true, now: T0 + 60 * DAY, word: "cat", canBumpMastery: alwaysBump });
   assert.ok(rec.interval <= SRS.MAX_INTERVAL_DAYS);
 });
+
+test("a missed word gets second looks a few words later, then stops for the day", () => {
+  const first = SRS.relearnGap(0);
+  const second = SRS.relearnGap(1);
+  // Far enough to leave working memory, never an immediate echo.
+  assert.ok(first >= 2, "first second-look waits at least two other words");
+  assert.ok(second >= first, "gaps never shrink");
+  assert.equal(SRS.relearnGap(2), undefined, "after the allowed second looks the word is left to its schedule");
+});

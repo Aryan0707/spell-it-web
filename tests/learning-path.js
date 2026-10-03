@@ -78,11 +78,13 @@ async page => {
     }
     await page.locator('#screen-summary.active').waitFor();
   };
+  await page.locator('#nav-learn').click();
   await page.locator('#btn-path-start').click();
   await page.setViewportSize({ width: 375, height: 812 });
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile teaching card must not overflow');
   await page.locator('#btn-quit').click();
   assert(await completed() === 0, 'Quitting teaching does not pass');
+  await page.locator('#nav-learn').click();
   await page.locator('#btn-path-start').click();
   await learn(true);
   await check(true);

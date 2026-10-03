@@ -27,11 +27,11 @@
   // Fallback tiers so the app still feels alive if the user hasn't
   // customised COMBO_TIERS yet. Remove this once yours is filled in.
   const DEFAULT_TIERS = [
-    { at: 3,  text: "Nice!",       emoji: "✨" },
-    { at: 5,  text: "On fire!",    emoji: "🔥" },
-    { at: 8,  text: "Rolling!",    emoji: "🚀" },
-    { at: 12, text: "Unreal!",     emoji: "⚡" },
-    { at: 20, text: "Legendary!",  emoji: "👑" },
+    { at: 3,  text: "3 in a row",  emoji: "" },
+    { at: 5,  text: "5 in a row",  emoji: "" },
+    { at: 8,  text: "8 in a row",  emoji: "" },
+    { at: 12, text: "12 in a row", emoji: "" },
+    { at: 20, text: "20 in a row", emoji: "" },
   ];
 
   function activeTiers() {
@@ -63,8 +63,7 @@
   }
 
   const CONFETTI_COLORS = [
-    "#22c55e", "#3BA18C", "#ffab4a", "#f472b6",
-    "#60a5fa", "#a78bfa", "#facc15", "#fb7185",
+    "#4FD1B4", "#7DE6CE", "#3FBFA3", "#E6EDF3",
   ];
 
   function burstAt(x, y, count) {
@@ -145,7 +144,7 @@
     if (!tier) return;
     const node = document.createElement("div");
     node.className = "delight-combo";
-    node.innerHTML = `<span class="delight-combo-emoji">${tier.emoji}</span><span class="delight-combo-text">${tier.text}</span>`;
+    node.innerHTML = `${tier.emoji ? `<span class="delight-combo-emoji">${tier.emoji}</span>` : ""}<span class="delight-combo-text">${tier.text}</span>`;
     document.body.appendChild(node);
     setTimeout(() => node.remove(), 1400);
   }
@@ -221,23 +220,7 @@
 
   // ---------- public API ----------
   function correct({ streak = 0, fromEl = null } = {}) {
-    // Confetti at the center-ish (or from the correct source element).
-    const cx = fromEl
-      ? fromEl.getBoundingClientRect().left + fromEl.getBoundingClientRect().width / 2
-      : window.innerWidth / 2;
-    const cy = fromEl
-      ? fromEl.getBoundingClientRect().top + fromEl.getBoundingClientRect().height / 2
-      : window.innerHeight * 0.42;
-    const base = 24;
-    const bonus = Math.min(60, streak * 3);
-    burstAt(cx, cy, base + bonus);
-
-    // XP fly-in
-    const xp = 10 + (streak >= 3 ? streak * 2 : 0);
-    const pill = document.querySelector(".streak-pill");
-    const source = fromEl || document.querySelector(".feedback-banner");
-    if (pill && source) flyXP(`+${xp}`, source, pill);
-
+    // A correct answer is acknowledged by the green slots and the streak count, not by fireworks.
     flareStreakPill(streak);
     pulseProgress();
 
@@ -267,11 +250,11 @@
     if (!el) return;
     const h = new Date().getHours();
     let g = "Welcome back";
-    if (h < 5) g = "Late night, hero";
+    if (h < 5) g = "Working late";
     else if (h < 12) g = "Good morning";
     else if (h < 17) g = "Good afternoon";
     else if (h < 22) g = "Good evening";
-    else g = "Winding down";
+    else g = "Good evening";
     el.textContent = g;
 
     // Rotate the hero title so it doesn't feel static.
@@ -281,7 +264,7 @@
       const lines = [];
       if (streak >= 3) lines.push(`Day ${streak} of your streak.`);
       if (due > 0) lines.push(`${due} word${due === 1 ? "" : "s"} to revisit.`);
-      lines.push("Let's spell something today.");
+      lines.push("Ready when you are.");
       lines.push("A little practice adds up.");
       lines.push("Two minutes is enough.");
       // Pick one deterministically per hour so it doesn't flicker.
