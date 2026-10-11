@@ -2441,3 +2441,28 @@ body{ background: var(--bg); }
 .rc-table table{ width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .rc-table th, .rc-table td{ padding: 5px 6px; text-align: left; border-bottom: 1px solid var(--hairline); color: var(--ink-soft); }
 .rc-table th{ color: var(--ink); font-weight: 600; }
+/* ---------- Read your own text (reading-custom.js) ---------- */
+.rc-kicker{ display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 700; margin-bottom: 4px; }
+.rc-card p{ margin: 0 0 4px; color: var(--ink-soft); }
+.rc-history{ margin-top: 12px; }
+.rc-history summary{ cursor: pointer; font-weight: 600; }
+.rc-history ul{ list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.rc-history li strong{ display: block; overflow-wrap: anywhere; }
+.rc-history li span{ display: block; font-size: 0.8rem; color: var(--ink-soft); }
+.rc-text{ width: 100%; min-height: 12rem; }
+.rc-count{ margin: 6px 0 14px; font-size: 0.82rem; color: var(--ink-soft); }
+.rc-count.bad{ color: var(--accent-warm); }
+.rc-modes{ border: 0; padding: 0; margin: 14px 0 8px; }
+.rc-modes legend{ font-weight: 700; margin-bottom: 6px; padding: 0; }
+.rc-pace{ display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0 12px; }
+.rc-pace[hidden], .rc-firsts[hidden], .rc-more[hidden]{ display: none; }
+.rc-pace-label{ font-weight: 700; }
+.rc-pace .rc-step{ width: 44px; min-height: 44px; margin: 0; padding: 0; font-size: 1.3rem; }
+.rc-pace-value{ min-width: 6.5rem; text-align: center; font-size: 1.1rem; }
+.rc-pace .settings-note{ flex-basis: 100%; margin: 0; }
+.rc-error{ min-height: 1.2em; margin: 8px 0; color: var(--bad); font-size: 0.9rem; }
+.rc-gap{ margin-top: 18px; }
+.rc-firsts{ margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.rc-rate{ display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.rc-rate .btn{ margin: 0; padding: 8px 2px; min-height: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.rc-rate .btn span{ font-size: 0.68rem; font-weight: 500; color: var(--ink-soft); }
