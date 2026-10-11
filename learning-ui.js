@@ -188,6 +188,7 @@
       if (validated.coach && window.SpellCoach) {
         window.SpellCoach.replaceCoachData(validated.coach);
       }
+      if (validated.reading && window.SpellReading?.applyState) window.SpellReading.applyState(validated.reading);
       renderDaily();
     }
     finally { busyApplying = false; }
@@ -239,7 +240,7 @@
       try {
         if (file.size > 1_500_000) throw new Error("Choose a backup smaller than 1.5 MB.");
         imported = SpellLearning.validateSnapshot(JSON.parse(await file.text()));
-        el("backup-description").textContent = `${Object.keys(imported.progress.srs).length} practised words, ${Object.values(imported.learning.lists).filter(l => !l.deleted).length} lists and ${Object.keys(imported.learning.notebook).length} notebook entries. This merges with the progress already here; newer edits win.`;
+        el("backup-description").textContent = `${Object.keys(imported.progress.srs).length} practised words, ${Object.values(imported.learning.lists).filter(l => !l.deleted).length} lists and ${Object.keys(imported.learning.notebook).length} notebook entries${imported.reading?.results.length ? ` and ${imported.reading.results.length} reading sessions` : ""}. This merges with the progress already here; newer edits win.`;
         el("backup-preview").classList.remove("hidden"); el("backup-status").textContent = "Backup checked. Ready to merge.";
       } catch (error) { el("backup-status").textContent = error.message || "Couldn't read this backup."; }
     });

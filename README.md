@@ -49,7 +49,7 @@ Progress and preferences are stored in this browser. API keys, if configured, ar
 - **Progressive hints:** definition, syllables (or clearly labelled letter groups when syllables aren't available), then the first letter. Using any hint marks the answer as assisted. Assisted answers do not advance mastery or clean-answer streaks and remain available for review.
 - **Daily five:** up to two due words plus fresh practice to make five, selected once per local date. Each completed word is saved immediately so the challenge can resume after leaving or reloading. The weekly calendar records completed challenges. When there are fewer than two due words, fresh words fill the remaining spaces.
 - **Spelling notebook:** missed attempts and assisted words are collected with rule tips. Search, add a personal memory tip, and practise a word again. Notes save as you type.
-- **Devices & backup:** export a JSON backup, inspect an import summary and merge it with existing data. Explicit imports can recover data from before a reset. API keys, voice settings and sync codes are excluded.
+- **Devices & backup:** export a JSON backup, inspect an import summary and merge it with existing data. Explicit imports can recover data from before a reset. Reading trainer progress (starting speed, unlocked levels, paces, passages read and your last 100 results) is part of the backup; older backups without it still import, and the import summary counts the reading sessions. API keys, voice settings and sync codes are excluded.
 
 ## Personal notes on any word
 
@@ -112,7 +112,7 @@ On a host running the sync service, open **Settings → Devices & backup → Cre
 
 The browser encrypts the progress with AES-GCM using a randomly generated 256-bit key. Only an independently derived authentication token and encrypted payload reach the service. Provider API keys are never included. Requests bypass the service-worker cache. The server stores one encrypted snapshot per code, with an atomic revision check to reject stale writes.
 
-Sync runs after changes, on returning to the app, when reconnecting and periodically while the app is visible. It waits while a practice session or list/notebook editor is active. Different sessions, lists, attempts and calendar entries merge; newer edits win for the same note, list or word schedule. These comparisons use device timestamps, so device clocks should be accurate. Concurrent reviews of the same word retain the latest schedule rather than double-advancing mastery. Disconnect keeps local progress; Reset Progress propagates to linked devices after syncing.
+Sync runs after changes, on returning to the app, when reconnecting and periodically while the app is visible. It waits while a practice session or list/notebook editor is active. Different sessions, lists, attempts and calendar entries merge; newer edits win for the same note, list or word schedule. These comparisons use device timestamps, so device clocks should be accurate. Concurrent reviews of the same word retain the latest schedule rather than double-advancing mastery. Reading trainer progress syncs too (`reading-sync.js`): results are combined by time and the newest 100 kept, passage counts and the unlocked level take the higher value, the starting speed comes from the earliest passing Level 1 result, and each level's pace follows the device that read that level last. A device that has never used the trainer adds nothing to its backups. Disconnect keeps local progress; Reset Progress propagates to linked devices after syncing.
 
 ## Host the app
 
