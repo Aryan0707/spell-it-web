@@ -238,6 +238,8 @@
   let root = null;
   let state = emptyState();
   let run = null; // the read in progress: { level, passage, startedAt, ... }
+  const extensions = []; // add-ons for the front page: { id, home(host) => html, bind(root, host) }
+  const host = { state: () => state };
 
   const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -299,9 +301,11 @@
         <ol class="rd-method-list">${METHOD.map((m) => `<li><strong>${escapeHtml(m.title)}.</strong> ${escapeHtml(m.text)}</li>`).join("")}</ol>
         <p class="settings-note">${escapeHtml(HONEST_NOTE)}</p>
       </details>
+      ${extensions.map((x) => x.home(host)).join("")}
       <ol class="rd-levels" aria-label="Levels">${levelRows}</ol>
       <p class="settings-note">Every level needs two thirds of the answers right: 2 of 3 on the basic texts, 4 of 5 on the advanced ones. Effective speed = words per minute × share right.</p>
     `);
+    for (const x of extensions) x.bind?.(root, host);
   }
 
   // ---------- lesson ----------
@@ -649,5 +653,7 @@
     for (const button of document.querySelectorAll("[data-open-reading]")) button.addEventListener("click", open);
   }
 
-  window.SpellReading = { init, open, ...api };
+  function register(extension) { extensions.push(extension); }
+
+  window.SpellReading = { init, open, register, ...api };
 })();
