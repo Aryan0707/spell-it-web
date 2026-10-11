@@ -248,6 +248,7 @@
     }
     const result = copy({ format: "spellit-backup", version: 1, progress, learning });
     if (coach) result.coach = coach;
+    if (a.reading || b.reading) result.reading = window.SpellReadingSync ? window.SpellReadingSync.merge(a.reading, b.reading) : copy(a.reading || b.reading);
     return result;
   }
   function validateSnapshot(raw) {
@@ -269,7 +270,7 @@
       }
       if (e.variants) { object(e.variants); for (const v of Object.values(e.variants)) word(v); }
     }
-    object(raw, ["format", "version", "progress", "learning", "coach", "exportedAt"]);
+    object(raw, ["format", "version", "progress", "learning", "coach", "reading", "exportedAt"]);
     const p = raw.progress, l = raw.learning;
     object(p, ["bestStreak", "curStreak", "learned", "missed", "srs", "sessionsCompleted", "patternMistakes"]);
     for (const k of ["bestStreak", "curStreak", "sessionsCompleted"]) num(p[k]);
@@ -361,11 +362,19 @@
         num(h.from); num(h.to); num(h.at); str(h.reason || "", 200);
       }
     }
-    return copy(raw);
+    const valid = copy(raw);
+    // Reading progress is optional (older backups have none) and is cleaned rather than trusted.
+    if (raw.reading !== undefined) {
+      if (window.SpellReadingSync) valid.reading = window.SpellReadingSync.validate(raw.reading);
+      else delete valid.reading;
+    }
+    return valid;
   }
   function snapshot(progress) {
     const snap = { format: "spellit-backup", version: 1, progress: copy(progress), learning: copy(state) };
     if (window.SpellCoach) snap.coach = window.SpellCoach.getCoachData();
+    const reading = window.SpellReading?.getState && window.SpellReadingSync?.clean(window.SpellReading.getState());
+    if (reading && window.SpellReadingSync.hasProgress(reading)) snap.reading = reading;
     return snap;
   }
   function replace(value) { state = copy(value); persist(); }

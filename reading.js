@@ -3,7 +3,7 @@
 // passage hidden. Speed only counts with understanding: every level needs two thirds of the answers
 // right (2 of 3 on the basic texts, 4 of 5 on the advanced ones), and the headline number is effective speed (words per minute × share right), so racing
 // through and guessing never scores well.
-// Progress stays in this browser; like the chat, it is not part of backups or sync yet.
+// Progress is kept in this browser and also travels in backups and sync (reading-sync.js).
 // The rules below the DOM line are pure and exported in Node for tests.
 (() => {
   "use strict";
@@ -236,7 +236,7 @@
   // ---------- DOM ----------
   let adapter = null;
   let root = null;
-  let state = emptyState();
+  let state = load(); // loaded now so a backup taken before the trainer opens still includes it
   let run = null; // the read in progress: { level, passage, startedAt, ... }
 
   // Extensions: other files add to the trainer without editing this one. An extension is
@@ -659,5 +659,9 @@
     for (const button of document.querySelectorAll("[data-open-reading]")) button.addEventListener("click", open);
   }
 
-  window.SpellReading = { init, open, register: (ext) => { extensions.push(ext); }, ...api };
+  // Backups and sync (reading-sync.js): read the progress, or replace it with a merged copy.
+  const getState = () => JSON.parse(JSON.stringify(state));
+  function applyState(next) { state = sanitize(next); save(); }
+
+  window.SpellReading = { init, open, register: (ext) => { extensions.push(ext); }, getState, applyState, ...api };
 })();
