@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const R = require('../reading.js');
-const { PASSAGES } = require('../reading-passages.js');
+const { PASSAGES, ADVANCED_PASSAGES } = require('../reading-passages.js');
 
 const pass = { wpm: 250, share: 1 };
 const fail = { wpm: 400, share: 1 / 3 };
@@ -91,6 +91,62 @@ test('saved progress is cleaned: bad values are dropped and levels stay locked w
   assert.equal(s.results.length, 1);
   assert.deepEqual(s.read, { b: 2 });
   assert.deepEqual(R.sanitize(null), R.emptyState());
+});
+
+test('advanced passages are longer, with five questions and three findable scanning targets each', () => {
+  const ids = new Set(PASSAGES.map(p => p.id));
+  assert.ok(ADVANCED_PASSAGES.length >= 6);
+  for (const p of ADVANCED_PASSAGES) {
+    assert.ok(!ids.has(p.id), `duplicate id ${p.id}`);
+    ids.add(p.id);
+    const words = R.countWords(p.paragraphs.join(' '));
+    assert.ok(words >= 220 && words <= 340, `${p.id} has ${words} words`);
+    assert.deepEqual(p.questions.map(q => q.kind), ['gist', 'fact', 'fact', 'inference', 'inference']);
+    for (const q of p.questions) {
+      assert.equal(q.options.length, 4);
+      assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4);
+    }
+    assert.equal(p.scans.length, 3);
+    // A tap is judged against the answer's position, so each answer must appear exactly once.
+    for (const scan of p.scans) assert.equal(R.findSpans(p, scan.find).length, 1, `${p.id}: "${scan.find}"`);
+  }
+});
+
+test('levels 5 to 7 read the advanced texts; the rest read the basic ones', () => {
+  const sets = { PASSAGES, ADVANCED_PASSAGES };
+  for (const level of R.LEVELS) {
+    assert.equal(R.passagesFor(level, sets), level.n >= 5 ? ADVANCED_PASSAGES : PASSAGES, `level ${level.n}`);
+  }
+});
+
+test('phrases are found by word position, ignoring case and punctuation at the edges', () => {
+  const passage = { paragraphs: ['The Mid-Atlantic Ridge, found in 1950.', 'It lies about 20,000 kilometres away.'] };
+  assert.deepEqual(R.findSpans(passage, 'mid-atlantic ridge'), [{ first: 1, last: 2 }]);
+  assert.deepEqual(R.findSpans(passage, '1950'), [{ first: 5, last: 5 }]);
+  assert.deepEqual(R.findSpans(passage, '20,000 kilometres'), [{ first: 9, last: 10 }]);
+  assert.deepEqual(R.findSpans(passage, 'ocean'), []);
+});
+
+test('the sprint lines each word up on a letter a little left of its middle', () => {
+  assert.deepEqual(R.orpSplit('a'), ['', 'a', '']);
+  assert.deepEqual(R.orpSplit('read'), ['r', 'e', 'ad']);
+  assert.deepEqual(R.orpSplit('reading'), ['re', 'a', 'ding']);
+  assert.deepEqual(R.orpSplit('"Consequently,'), ['"Con', 's', 'equently,']);
+  assert.equal(R.orpSplit('antibiotics.').join(''), 'antibiotics.');
+});
+
+test('long words and the ends of clauses and sentences stay up longer in the sprint', () => {
+  assert.equal(R.flashWeight('the'), 1);
+  assert.equal(R.flashWeight('word,'), 1.5);
+  assert.equal(R.flashWeight('end.'), 2);
+  assert.equal(R.flashWeight('magnetometers.'), 2.4);
+});
+
+test('on five questions, the mastery test needs four right', () => {
+  const s = { ...R.recordResult(R.emptyState(), 1, pass, 'salt').state, unlocked: 7 };
+  const goal = R.targetFor(s, 7);
+  assert.equal(R.recordResult(s, 7, { wpm: goal, share: 3 / 5 }, 'gps').passed, false);
+  assert.equal(R.recordResult(s, 7, { wpm: goal, share: 4 / 5 }, 'gps').passed, true);
 });
 
 const L = require('../reading-lesson.js');

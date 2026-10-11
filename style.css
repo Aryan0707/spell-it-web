@@ -2358,3 +2358,22 @@ body{ background: var(--bg); }
   .rl-eye, .rl-loop li, .rl-line > span[data-c]{ transition: none; }
   .rl-loop li.active{ transform: none; }
 }
+
+/* ---------- Advanced levels: tap-to-find scanning and the focus-letter sprint ---------- */
+.rd-scan-q small{ display: block; margin-top: 4px; color: var(--ink-soft); font-size: 0.8rem; }
+.rd-scan-text .rd-w{ cursor: pointer; padding: 1px 0; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover){ .rd-scan-text .rd-w:hover{ background: var(--sheen); } }
+.rd-scan-text .rd-w.hit{ background: color-mix(in srgb, var(--good) 22%, transparent); color: var(--good); }
+.rd-scan-text .rd-w.answer{ background: var(--accent-warm-soft); color: var(--accent-warm); }
+.rd-scan-text .rd-w.wrong{ background: color-mix(in srgb, var(--bad) 20%, transparent); color: var(--bad); text-decoration: line-through; }
+/* The focus letter sits at the exact centre: two equal columns either side of it. Marks above and
+   below point at it so the eye has a fixed place to rest. */
+.rd-flash{ position: relative; }
+.rd-flash::before, .rd-flash::after{ content: ""; position: absolute; left: 50%; width: 2px; height: 14px; margin-left: -1px; background: var(--accent-warm); opacity: 0.7; }
+.rd-flash::before{ top: 14px; }
+.rd-flash::after{ bottom: 14px; }
+.rd-orp{ display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); width: 100%; font-size: clamp(1.4rem, 7vw, 1.9rem); font-weight: 600; white-space: nowrap; }
+.rd-orp > span{ overflow: hidden; }
+#rd-orp-l{ text-align: right; }
+#rd-orp-c{ color: var(--accent-warm); }
+#rd-orp-r{ text-align: left; }

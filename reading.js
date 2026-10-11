@@ -1,7 +1,7 @@
 // Reading trainer: seven levels, from measuring your natural speed to a mastery test well above it.
 // Each level teaches one technique, drills it on a short passage, then asks three questions with the
-// passage hidden. Speed only counts with understanding: every level needs at least two of the three
-// answers right, and the headline number is effective speed (words per minute × share right), so racing
+// passage hidden. Speed only counts with understanding: every level needs two thirds of the answers
+// right (2 of 3 on the basic texts, 4 of 5 on the advanced ones), and the headline number is effective speed (words per minute × share right), so racing
 // through and guessing never scores well.
 // Progress stays in this browser; like the chat, it is not part of backups or sync yet.
 // The rules below the DOM line are pure and exported in Node for tests.
@@ -9,11 +9,13 @@
   "use strict";
 
   const STORAGE_KEY = "spellit_reading";
-  const PASS_SHARE = 2 / 3;      // share of questions needed to pass any level: two of three
+  const PASS_SHARE = 2 / 3;      // share of questions needed to pass any level: 2 of 3, or 4 of 5
   const MIN_WPM = 80;
   const MAX_WPM = 1000;
   const MAX_RESULTS = 100;
-  const MASTERY_GOAL = 1.5;      // the final test: this many times your starting speed, still understanding it
+  // The final test: this many times your starting speed, still understanding it. The starting speed was
+  // measured on the easier passages and the test uses an advanced one, so 1.3× here is a real step up.
+  const MASTERY_GOAL = 1.3;
   const PREVIEW_SECONDS = 20;
   const SCAN_SECONDS = 20;       // per question in the scanning level
 
@@ -47,15 +49,15 @@
     { n: 4, tier: "Intermediate", name: "Preview, then read", drill: "preview", chunk: 3, boost: 1.4, short: "Get the big picture first, then read faster.",
       why: "Knowing where a text is going lets you read it faster and remember more. A short preview of the opening sentences builds that map.",
       steps: [`You get ${PREVIEW_SECONDS} seconds to read the title and the first sentence of each paragraph.`, "Guess what the passage will say.", "Then read it in phrases with the highlight. One question will be about the main idea."] },
-    { n: 5, tier: "Advanced", name: "Scan for facts", drill: "scan", short: "Find answers fast without reading everything.",
-      why: "When you only need one fact, reading every word wastes time. Scanning means hunting for the shape of the answer and skipping the rest.",
-      steps: ["Read the question first and pick out the key word.", "Sweep the text for that word, a name, a number or a capital letter.", `Answer within ${SCAN_SECONDS} seconds. Read closely only around the match.`] },
-    { n: 6, tier: "Advanced", name: "Sprint", drill: "rsvp", chunk: 2, boost: 1.8, short: "Words flash in one place, faster than you are used to.",
-      why: "Words appearing in one spot remove eye movements entirely, so you can feel what a higher speed is like. This trains focus. It is a workout, not a way to read hard texts.",
-      steps: ["Keep your eyes on the box. Do not blink-check or reread.", "Hold the story in your head as it flows.", "After this, normal reading at your old speed should feel easier."] },
-    { n: 7, tier: "Advanced", name: "Mastery test", drill: "timed", short: `Read on your own at ${MASTERY_GOAL}× your starting speed and still understand it.`,
-      why: "Nothing sets the pace here. This checks that the skills have become yours: preview, read forward in phrases, change gear where it gets hard.",
-      steps: ["Preview the first sentences quickly on your own.", "Read forward in phrases. No pacer this time.", `Pass at ${MASTERY_GOAL}× your starting speed with at least two of three answers right.`] },
+    { n: 5, tier: "Advanced", name: "Scan for facts", drill: "scan", texts: "advanced", short: "Hunt down facts in a dense text and tap them.",
+      why: "When you need one fact, reading every word wastes time. Scanning means hunting for the shape of the answer and skipping everything else. This text is longer and denser than before, so reading all of it will not fit in the time.",
+      steps: ["Read the question and decide what the answer looks like: a year, a name, a measurement.", "Sweep your eyes down the text for that shape. Capitals, digits and the question's key word jump out.", `Tap the answer in the text within ${SCAN_SECONDS} seconds. A wrong tap shows you where it was.`] },
+    { n: 6, tier: "Advanced", name: "Sprint", drill: "rsvp", chunk: 1, boost: 1.6, texts: "advanced", short: "Words flash one at a time, lined up on a focus letter.",
+      why: "Each word appears in the same spot, lined up on the letter where the eye recognises a word fastest, so your eyes never have to move. Long words and sentence ends stay up a little longer and the rest go a little faster, so the average pace is unchanged. This trains focus at speed. It is a workout, not a way to read hard texts.",
+      steps: ["Keep your eyes on the orange focus letter between the two marks. It never moves.", "Do not try to say every word. Hold the meaning as it flows.", "Afterwards you need four of five answers right."] },
+    { n: 7, tier: "Advanced", name: "Mastery test", drill: "timed", texts: "advanced", short: `A longer, harder text on your own at ${MASTERY_GOAL}× your starting speed.`,
+      why: `Nothing sets the pace here, and the text is harder than the one you started on. That is why the goal is ${MASTERY_GOAL}× your starting speed: reading dense text that fast, and understanding it, shows the skills have become yours.`,
+      steps: ["Preview the first sentences quickly on your own.", "Read forward in phrases. Slow down where it gets dense, speed up where it is easy.", `Pass at ${MASTERY_GOAL}× your starting speed with at least four of five answers right.`] },
   ];
 
   const clampWpm = (wpm) => Math.round(Math.min(MAX_WPM, Math.max(MIN_WPM, wpm)));
@@ -95,6 +97,45 @@
     }
     flush();
     return chunks;
+  }
+
+  const normWord = (word) => word.toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+
+  // Every place a phrase occurs in a passage, as word positions { first, last } counted across all
+  // paragraphs: the same numbering the tappable words use. Case and edge punctuation are ignored.
+  function findSpans(passage, phrase) {
+    const words = passageWords(passage).flat().map(normWord);
+    const target = phrase.split(/\s+/).map(normWord);
+    const spans = [];
+    for (let i = 0; i + target.length <= words.length; i++) {
+      if (target.every((t, k) => words[i + k] === t)) spans.push({ first: i, last: i + target.length - 1 });
+    }
+    return spans;
+  }
+
+  // Sprint display: the focus letter a flashed word is lined up on, a little left of its middle, where
+  // the eye recognises a word fastest. Returns [before, focus, after].
+  function orpSplit(word) {
+    const start = word.search(/[\p{L}\p{N}]/u);
+    if (start < 0) return ["", word, ""];
+    const length = word.slice(start).replace(/[^\p{L}\p{N}]+$/u, "").length;
+    const at = start + (length <= 1 ? 0 : length <= 5 ? 1 : length <= 9 ? 2 : length <= 13 ? 3 : 4);
+    return [word.slice(0, at), word[at], word.slice(at + 1)];
+  }
+
+  // How long a word stays up in the sprint, in average word-lengths: long words and the ends of clauses
+  // and sentences get extra time. The run is rescaled so the overall pace still matches the target.
+  function flashWeight(word) {
+    const letters = word.replace(/[^\p{L}\p{N}]/gu, "").length;
+    let weight = 1;
+    if (letters >= 9) weight += 0.4;
+    if (/[.!?]["”')]?$/.test(word)) weight += 1;
+    else if (/[,;:]["”')]?$/.test(word)) weight += 0.5;
+    return weight;
+  }
+
+  function passagesFor(level, sets) {
+    return level.texts === "advanced" && sets.ADVANCED_PASSAGES?.length ? sets.ADVANCED_PASSAGES : sets.PASSAGES;
   }
 
   // ---------- progress ----------
@@ -184,6 +225,7 @@
   }
 
   const api = { LEVELS, METHOD, PASS_SHARE, MASTERY_GOAL, MAX_WPM, countWords, passageWords, wordsPerMinute, effectiveWpm, makeChunks,
+    findSpans, orpSplit, flashWeight, passagesFor,
     emptyState, sanitize, targetFor, passes, adaptTarget, recordResult, pickPassage, stats };
 
   if (typeof window === "undefined") {
@@ -258,7 +300,7 @@
         <p class="settings-note">${escapeHtml(HONEST_NOTE)}</p>
       </details>
       <ol class="rd-levels" aria-label="Levels">${levelRows}</ol>
-      <p class="settings-note">Every level needs at least two of three answers right to pass. Effective speed = words per minute × share right.</p>
+      <p class="settings-note">Every level needs two thirds of the answers right: 2 of 3 on the basic texts, 4 of 5 on the advanced ones. Effective speed = words per minute × share right.</p>
     `);
   }
 
@@ -267,8 +309,8 @@
     stopTimers();
     const level = LEVELS[levelNumber - 1];
     const target = targetFor(state, level.n);
-    const pace = level.drill === "scan" ? `${SCAN_SECONDS} seconds per question` : target ? `${target} words per minute` : "Your own pace";
-    const passage = pickPassage(state, window.SpellReadingPassages.PASSAGES);
+    const pace = level.drill === "scan" ? `${SCAN_SECONDS} seconds per fact` : level.drill === "rsvp" ? `${target} words per minute on average` : target ? `${target} words per minute` : "Your own pace";
+    const passage = pickPassage(state, passagesFor(level, window.SpellReadingPassages));
     // Options appear in a fresh order each read, so the right answer is never "usually B".
     const order = passage.questions.map((q) => q.options.map((_, i) => i).sort(() => Math.random() - 0.5));
     run = { level, passage, target, order };
@@ -281,6 +323,7 @@
         <h3>How to do it</h3>
         <ol class="rd-steps">${level.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
         <p class="rd-pace"><span>Pace</span> <strong>${escapeHtml(pace)}</strong></p>
+        ${level.texts === "advanced" ? '<p class="rd-pace"><span>Text</span> <strong>Advanced: longer and denser</strong></p>' : ""}
       </div>
       <button class="btn btn-primary btn-big" data-action="begin">Start reading</button>
       <button class="btn btn-ghost" data-action="home">Back to levels</button>
@@ -340,12 +383,18 @@
   // the clock, not from counting ticks, so a slow phone never drifts off pace.
   function startPaced(chunkSize, style) {
     stopTimers();
-    const chunks = passageWords(run.passage).flatMap((words) => makeChunks(words, chunkSize));
+    const paragraphs = passageWords(run.passage);
+    const chunks = style === "flash"
+      ? paragraphs.flat().map((word) => ({ words: [word], weight: flashWeight(word) }))
+      : paragraphs.flatMap((words) => makeChunks(words, chunkSize));
+    // In the sprint, the extra time long words and sentence ends get is taken from the other words,
+    // so the average pace is still the target.
+    const scale = style === "flash" ? chunks.length / chunks.reduce((sum, c) => sum + c.weight, 0) : 1;
     const msPerWord = 60000 / run.target;
     let at = 0, wordIndex = 0;
     const timeline = chunks.map((c) => {
       const entry = { start: at, first: wordIndex, words: c.words };
-      at += c.weight * msPerWord;
+      at += c.weight * msPerWord * scale;
       wordIndex += c.words.length;
       return entry;
     });
@@ -356,8 +405,8 @@
         ${passageHtml(run.passage, { wrap: true })}
         <div class="rd-dock"><button class="btn btn-ghost" data-action="pause">Pause</button></div>`);
     } else {
-      render(`<p class="feature-eyebrow">${run.target} words per minute · eyes on the box</p>
-        <div class="rd-flash" aria-live="off"><span id="rd-flash-text">Ready…</span></div>
+      render(`<p class="feature-eyebrow">${run.target} words per minute · eyes on the orange letter</p>
+        <div class="rd-flash" aria-live="off"><div class="rd-orp"><span id="rd-orp-l"></span><span id="rd-orp-c">•</span><span id="rd-orp-r"></span></div></div>
         <div class="rd-progress"><span id="rd-progress-bar"></span></div>
         <div class="rd-dock"><button class="btn btn-ghost" data-action="pause">Pause</button></div>`);
     }
@@ -387,7 +436,10 @@
       shown = i;
       const chunk = timeline[i];
       if (style === "flash") {
-        document.getElementById("rd-flash-text").textContent = chunk.words.join(" ");
+        const [before, focus, after] = orpSplit(chunk.words[0]);
+        document.getElementById("rd-orp-l").textContent = before;
+        document.getElementById("rd-orp-c").textContent = focus;
+        document.getElementById("rd-orp-r").textContent = after;
         document.getElementById("rd-progress-bar").style.width = `${(100 * chunk.start) / total}%`;
         return;
       }
@@ -410,28 +462,45 @@
     if (button) button.textContent = paused ? "Resume" : "Pause";
   }
 
-  // Scanning: one question at a time over the visible passage, each against its own clock.
-  function startScan(index, answers) {
+  // Scanning: one fact at a time over the whole passage. The learner hunts for the answer and taps it in
+  // the text, each against its own clock. Only a tap on one of the answer's words counts.
+  function startScan(index, found) {
     stopTimers();
-    const question = run.passage.questions[index];
-    if (!question) {
-      run.answers = answers;
+    const scans = run.passage.scans;
+    const item = scans[index];
+    if (!item) {
+      run.found = found;
       return finish();
     }
-    render(`<p class="feature-eyebrow">Fact ${index + 1} of ${run.passage.questions.length} · <span id="rd-countdown">${SCAN_SECONDS}</span>s</p>
-      <div class="feature-card rd-scan-q"><strong>${escapeHtml(question.q)}</strong>
-        <div class="rd-options">${run.order[index].map((i) => `<button class="btn btn-ghost rd-option" data-scan="${i}">${escapeHtml(question.options[i])}</button>`).join("")}</div>
-      </div>
-      ${passageHtml(run.passage)}`);
-    const ends = performance.now() + SCAN_SECONDS * 1000;
-    run.scan = { index, answers };
+    render(`<p class="feature-eyebrow">Fact ${index + 1} of ${scans.length} · <span id="rd-countdown">${SCAN_SECONDS}</span>s</p>
+      <div class="feature-card rd-scan-q"><strong>${escapeHtml(item.q)}</strong><small>Find the answer and tap it in the text.</small></div>
+      ${passageHtml(run.passage, { wrap: true })}`);
+    root.querySelector(".rd-passage").classList.add("rd-scan-text");
+    const started = performance.now();
+    run.scan = { index, found, span: findSpans(run.passage, item.find)[0], started, locked: false };
     run.timer = setInterval(() => {
       if (!isOpen()) return stopTimers();
-      const left = Math.max(0, Math.ceil((ends - performance.now()) / 1000));
+      const left = Math.max(0, Math.ceil((started + SCAN_SECONDS * 1000 - performance.now()) / 1000));
       const label = document.getElementById("rd-countdown");
       if (label) label.textContent = left;
-      if (left === 0) startScan(index + 1, [...answers, -1]); // out of time counts as wrong
+      if (left === 0) answerScan(null); // out of time counts as not found
     }, 200);
+  }
+
+  // Mark the tap, show where the answer was if it was missed, then move on to the next fact.
+  function answerScan(tapped) {
+    const scan = run?.scan;
+    if (!scan || scan.locked) return;
+    scan.locked = true;
+    stopTimers();
+    const hit = tapped !== null && tapped >= scan.span.first && tapped <= scan.span.last;
+    const seconds = (performance.now() - scan.started) / 1000;
+    const words = root.querySelectorAll(".rd-w");
+    for (let i = scan.span.first; i <= scan.span.last; i++) words[i]?.classList.add(hit ? "hit" : "answer");
+    if (tapped !== null && !hit) words[tapped]?.classList.add("wrong");
+    if (!hit) words[scan.span.first]?.scrollIntoView({ block: "center", behavior: "smooth" });
+    const result = { hit, seconds: hit ? seconds : null };
+    setTimeout(() => isOpen() && run?.scan === scan && startScan(scan.index + 1, [...scan.found, result]), hit ? 700 : 1600);
   }
 
   // ---------- questions and result ----------
@@ -464,31 +533,41 @@
 
   function finish() {
     stopTimers();
+    const scan = run.level.drill === "scan";
     const qs = run.passage.questions;
-    const right = run.answers.filter((a, i) => a === qs[i].answer).length;
-    const share = right / qs.length;
-    const wpm = run.level.drill === "scan" ? 0 : wordsPerMinute(run.words, run.readMs);
+    const total = scan ? run.passage.scans.length : qs.length;
+    const right = scan ? run.found.filter((f) => f.hit).length : run.answers.filter((a, i) => a === qs[i].answer).length;
+    const share = right / total;
+    const wpm = scan ? 0 : wordsPerMinute(run.words, run.readMs);
     const before = state;
     const outcome = recordResult(state, run.level.n, { wpm, share }, run.passage.id);
     state = outcome.state;
     save();
     adapter?.onResult?.();
-    renderResult({ wpm, share, right, total: qs.length, outcome, before });
+    renderResult({ wpm, share, right, total, outcome, before });
   }
 
   function renderResult({ wpm, share, right, total, outcome, before }) {
     const { level, passage } = run;
     const answers = run.answers;
+    const scan = level.drill === "scan";
+    const hits = scan ? run.found.filter((f) => f.hit) : [];
+    const avgSeconds = hits.length ? (hits.reduce((sum, f) => sum + f.seconds, 0) / hits.length).toFixed(1) : null;
     const firstBaseline = !before.baseline && state.baseline;
     const message = tooFast({ wpm })
       ? `${wpm} words per minute is faster than anyone can read with understanding, so this counts as skimming. Read every line this time, at a pace where you can follow the story.`
       : outcome.passed
       ? (level.n === LEVELS.length ? "You passed the mastery test. You read well above your starting speed and understood it." : outcome.unlockedNew ? `Passed. Level ${level.n + 1} is open.` : "Passed.")
+      : share < PASS_SHARE && scan
+        ? "Do not read: hunt. Decide what the answer looks like, then sweep the text for numbers, capitals or the question's key word."
       : share < PASS_SHARE
         ? "Understanding comes first. Try again a little slower, and picture what each paragraph is saying."
         : `Good understanding, but under the ${targetFor(before, level.n)} wpm goal. Preview first and keep your eyes moving forward.`;
     const nextPace = level.boost ? targetFor(state, level.n) : null;
-    const review = passage.questions.map((q, i) => {
+    const review = scan ? passage.scans.map((item, i) => {
+      const f = run.found[i];
+      return `<li class="${f?.hit ? "ok" : "miss"}"><span>${f?.hit ? "✓" : "✗"}</span> ${escapeHtml(item.q)}${f?.hit ? ` <small>${f.seconds.toFixed(1)}s</small>` : `<br><small>Answer: ${escapeHtml(item.find)}</small>`}</li>`;
+    }).join("") : passage.questions.map((q, i) => {
       const ok = answers[i] === q.answer;
       return `<li class="${ok ? "ok" : "miss"}"><span>${ok ? "✓" : "✗"}</span> ${escapeHtml(q.q)}${ok ? "" : `<br><small>Answer: ${escapeHtml(q.options[q.answer])}</small>`}</li>`;
     }).join("");
@@ -498,7 +577,8 @@
     render(`<p class="feature-eyebrow">Level ${level.n} · ${escapeHtml(level.name)}</p>
       <div class="rd-stats rd-result">
         ${wpm ? `<div><strong>${wpm}</strong><span>words / min</span></div>` : ""}
-        <div><strong>${right}/${total}</strong><span>understood</span></div>
+        <div><strong>${right}/${total}</strong><span>${scan ? "found" : "understood"}</span></div>
+        ${scan ? `<div><strong>${avgSeconds ? `${avgSeconds}s` : "–"}</strong><span>per fact found</span></div>` : ""}
         ${wpm ? `<div><strong>${effectiveWpm(wpm, share)}</strong><span>effective</span></div>` : ""}
       </div>
       <p class="rd-message ${outcome.passed ? "pass" : "fail"}" role="status">${escapeHtml(message)}</p>
@@ -513,14 +593,12 @@
 
   // ---------- wiring ----------
   function onClick(event) {
-    const target = event.target.closest("[data-level], [data-action], [data-scan]");
+    const word = event.target.closest(".rd-w");
+    if (word && run?.scan && !run.scan.locked) return answerScan(Number(word.dataset.i));
+    const target = event.target.closest("[data-level], [data-action]");
     if (!target || target.disabled) return;
     // A level opened from the lesson may still be locked: open the furthest one reached instead.
     if (target.dataset.level) return renderLesson(Math.min(Number(target.dataset.level), state.unlocked));
-    if (target.dataset.scan !== undefined && run?.scan) {
-      const { index, answers } = run.scan;
-      return startScan(index + 1, [...answers, Number(target.dataset.scan)]);
-    }
     const action = target.dataset.action;
     if (action === "home") return renderHome();
     if (action === "eyes") { stopTimers(); run = null; root.innerHTML = ""; window.scrollTo?.(0, 0); return window.SpellReadingLesson?.render(root); }

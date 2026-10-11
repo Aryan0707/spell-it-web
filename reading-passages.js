@@ -148,7 +148,145 @@
     },
   ];
 
-  const api = { PASSAGES };
+  // Advanced passages (levels 5–7): denser, more academic texts, about 250–300 words. Five questions each
+  // (main idea, two facts, two inferences) so understanding is measured in 20% steps, plus three scanning
+  // targets. Each `find` is a phrase that appears exactly once in the passage: the learner taps it.
+  const ADVANCED_PASSAGES = [
+    {
+      id: "resistance",
+      title: "Why antibiotics stop working",
+      paragraphs: [
+        "When Alexander Fleming accepted his share of the Nobel Prize in 1945, he used part of his lecture to issue a warning. Penicillin, the drug he had discovered in 1928, was already saving thousands of lives, yet he cautioned that bacteria exposed to too little of it could learn to survive it. Within a few decades his prediction had become one of the defining problems of modern medicine.",
+        "The process Fleming feared is natural selection operating at extraordinary speed. A single infection may involve billions of bacteria, and in favourable conditions some species can divide roughly every twenty minutes. Among so many cells, random mutations occasionally produce one that tolerates a drug slightly better than its neighbours. When an antibiotic is applied, the susceptible majority dies while the tolerant minority survives and multiplies, so the next generation is dominated by resistant descendants.",
+        "Bacteria have a further advantage that animals lack. They can pass small loops of DNA, called plasmids, directly to one another, even across species. A resistance gene that evolves in a harmless gut bacterium can therefore end up in a dangerous pathogen without either organism inheriting it from a parent.",
+        "Consequently, every unnecessary prescription carries a hidden cost. Antibiotics have no effect on viruses, so taking them for a common cold provides no benefit while still applying selective pressure to the bacteria living in the body. Similarly, the routine use of antibiotics to make farm animals grow faster, banned in the European Union since 2006, exposed vast bacterial populations to low doses: precisely the conditions Fleming warned about.",
+      ],
+      questions: [
+        { kind: "gist", q: "What is the passage mainly about?", options: ["How Fleming discovered penicillin", "How bacteria evolve and share resistance, and why misuse speeds it up", "Why viruses are harder to treat than bacteria", "How farm animals are raised in Europe"], answer: 1 },
+        { kind: "fact", q: "What are plasmids?", options: ["Drugs that kill viruses", "Small loops of DNA that bacteria can pass to one another", "Bacteria that live in the gut", "A type of white blood cell"], answer: 1 },
+        { kind: "fact", q: "Why does taking antibiotics for a cold not help?", options: ["Colds are caused by viruses, which antibiotics do not affect", "The dose is always too small", "Cold bacteria are already resistant", "Antibiotics only work in animals"], answer: 0 },
+        { kind: "inference", q: "Why does the speed at which bacteria divide matter for resistance?", options: ["Many generations pass quickly, so a resistant variant can soon take over", "Fast-dividing bacteria cannot mutate", "It makes antibiotics stronger", "It stops plasmids from spreading"], answer: 0 },
+        { kind: "inference", q: "What does the paragraph about plasmids suggest?", options: ["Resistance only matters in dangerous species", "Resistance that appears in harmless bacteria can still become a danger", "Harmless bacteria cannot carry resistance", "Plasmids make bacteria weaker"], answer: 1 },
+      ],
+      scans: [
+        { q: "In what year did Fleming discover penicillin?", find: "1928" },
+        { q: "How often can some bacteria divide in good conditions?", find: "every twenty minutes" },
+        { q: "Where were antibiotics for faster growth in farm animals banned?", find: "European Union" },
+      ],
+    },
+    {
+      id: "plates",
+      title: "The slow acceptance of moving continents",
+      paragraphs: [
+        "In 1912 the German meteorologist Alfred Wegener proposed that the continents had once been joined in a single landmass and had since drifted apart. His evidence was striking: the coastlines of South America and Africa fit together like puzzle pieces, and identical fossils and rock formations appear on both sides of the Atlantic. Nevertheless, most geologists rejected the idea for decades, chiefly because Wegener could not explain what force could push entire continents across the globe.",
+        "The missing mechanism emerged from the ocean floor. After the Second World War, sonar surveys revealed an enormous underwater mountain chain, the Mid-Atlantic Ridge, running down the middle of the ocean. Around 1960 the American geologist Harry Hess suggested that new crust forms at such ridges, where molten rock rises from below, and then spreads outward on both sides.",
+        "Confirmation came from magnetism. When lava cools, magnetic minerals inside it align with Earth's magnetic field, which reverses direction at irregular intervals over geological time. Ships towing magnetometers found the seafloor striped with alternating bands of normal and reversed magnetism, and the pattern on one side of a ridge mirrored the pattern on the other. Rock was being created at the centre and carried away symmetrically, like two conveyor belts.",
+        "Today the theory of plate tectonics explains earthquakes, volcanoes and mountain ranges as consequences of a dozen or so large plates grinding past, beneath and into one another. They move only a few centimetres a year, roughly as fast as fingernails grow, yet over millions of years that is enough to open an ocean.",
+      ],
+      questions: [
+        { kind: "gist", q: "What is the passage mainly about?", options: ["Why Wegener was a careless scientist", "How continental drift was proposed, doubted, and finally explained by evidence from the seafloor", "How sonar was invented", "Why earthquakes happen in the Atlantic"], answer: 1 },
+        { kind: "fact", q: "Why did most geologists reject Wegener's idea at first?", options: ["His fossils were fake", "He could not explain what force moved the continents", "The coastlines did not match", "Nobody had measured the Atlantic"], answer: 1 },
+        { kind: "fact", q: "What did ships find on either side of a ridge?", options: ["Magnetic stripes in mirror-image patterns", "Rock with no magnetism at all", "Fossils of sea creatures", "Random patterns with no order"], answer: 0 },
+        { kind: "inference", q: "Why were the mirrored stripes strong evidence for seafloor spreading?", options: ["They showed new rock forming at the ridge and moving away on both sides", "They proved Africa and South America were once joined", "They showed the ocean is getting shallower", "They proved fossils can move"], answer: 0 },
+        { kind: "inference", q: "What does the comparison with fingernails suggest?", options: ["Plates move too slowly to matter", "Tiny yearly movements add up to huge changes over very long times", "Plates move faster than people think", "Plate movement can be felt every day"], answer: 1 },
+      ],
+      scans: [
+        { q: "In what year did Wegener propose that continents drift?", find: "1912" },
+        { q: "What is the underwater mountain chain in the Atlantic called?", find: "Mid-Atlantic Ridge" },
+        { q: "Who suggested that new crust forms at ridges?", find: "Harry Hess" },
+      ],
+    },
+    {
+      id: "trade",
+      title: "Comparative advantage",
+      paragraphs: [
+        "It seems obvious that a country should trade only if it can produce something more cheaply than its partners. In 1817 the British economist David Ricardo showed that this intuition is wrong. In his example, Portugal could produce both wine and cloth with less labour than England. Even so, he argued, both countries would be better off if Portugal concentrated on wine, England concentrated on cloth, and each traded for the other good.",
+        "The key is opportunity cost: what you give up in order to make something. Portugal's advantage was far greater in wine than in cloth, so every worker it moved from cloth into wine produced a great deal of extra wine while sacrificing comparatively little cloth. For England the situation was reversed. Its workers were less productive at everything, but their disadvantage was smallest in cloth. When each country specialises in the good it gives up least to produce, total output of both goods rises, and trade allows the gains to be shared.",
+        "The principle applies to individuals as well as nations. A senior lawyer who types faster than her assistant may still be wise to employ the assistant, because an hour she spends typing is an hour she cannot spend on work only she can do.",
+        "Economists rarely agree as completely as they do on comparative advantage, yet the idea has limits. It describes the total gains from trade, not how those gains are distributed, and workers in industries that shrink under specialisation can suffer real and lasting losses even while the economy as a whole grows.",
+      ],
+      questions: [
+        { kind: "gist", q: "What is the passage mainly about?", options: ["How Portugal became rich from wine", "Why trade can benefit both sides even when one is better at everything", "Why lawyers should type their own letters", "Why economists disagree about trade"], answer: 1 },
+        { kind: "fact", q: "In Ricardo's example, which country could make both goods with less labour?", options: ["England", "Portugal", "Neither", "Both equally"], answer: 1 },
+        { kind: "fact", q: "What is opportunity cost?", options: ["The price of a good in a shop", "What you give up in order to make something", "The cost of shipping goods abroad", "The wage paid to a worker"], answer: 1 },
+        { kind: "inference", q: "Why should the lawyer employ an assistant even though she types faster?", options: ["Typing is bad for her health", "Her time is worth more on work only she can do", "Assistants always type better", "The law requires it"], answer: 1 },
+        { kind: "inference", q: "What limit of the idea does the last paragraph point out?", options: ["It only works for wine and cloth", "The overall gains may not reach everyone; some workers lose out", "It makes economies shrink", "Most economists reject it"], answer: 1 },
+      ],
+      scans: [
+        { q: "In what year did Ricardo make his argument?", find: "1817" },
+        { q: "Who was the British economist?", find: "David Ricardo" },
+        { q: "Whose assistant appears in the example about individuals?", find: "senior lawyer" },
+      ],
+    },
+    {
+      id: "gps",
+      title: "Satellite navigation and Einstein",
+      paragraphs: [
+        "A satellite navigation receiver does not send any signal to the satellites overhead. It simply listens. Each of the roughly thirty GPS satellites, orbiting about 20,000 kilometres above Earth, continuously broadcasts its position and the precise time according to its onboard atomic clock. Because radio waves travel at the speed of light, the delay between when a signal was sent and when it arrives reveals how far away that satellite is.",
+        "Distance to one satellite places the receiver somewhere on an imaginary sphere; distances to three narrow the possibilities to a single point. In practice a fourth satellite is required, because the inexpensive clock in a phone is far less accurate than an atomic clock, and the extra measurement allows the receiver to calculate its own clock error as well as its position.",
+        "Such precision exposes effects that are invisible in everyday life. According to Einstein's special relativity, the satellites' speed makes their clocks tick slightly slower than clocks on the ground. General relativity predicts the opposite effect for their altitude: in weaker gravity, clocks tick faster. The second effect is larger, so overall the satellite clocks gain about 38 microseconds per day.",
+        "That sounds trivial, but light travels nearly 300 metres in a microsecond. If engineers ignored relativity, calculated positions would drift by roughly ten kilometres every day. Instead, the clocks are adjusted before launch to run slightly slow, so that once in orbit they keep time with clocks on Earth: a daily, practical confirmation of a theory often assumed to matter only to physicists.",
+      ],
+      questions: [
+        { kind: "gist", q: "What is the passage mainly about?", options: ["How satellite navigation works and why it must correct for relativity", "How to build an atomic clock", "Why phones lose signal in tunnels", "The life of Albert Einstein"], answer: 0 },
+        { kind: "fact", q: "Why does a receiver need a fourth satellite?", options: ["To send its own signal", "To work out the error in its own cheaper clock", "Because one satellite is always broken", "To measure the weather"], answer: 1 },
+        { kind: "fact", q: "Overall, how much time do the satellite clocks gain each day?", options: ["About 38 seconds", "About 38 microseconds", "About 7 minutes", "Nothing at all"], answer: 1 },
+        { kind: "inference", q: "Why does such a tiny time error matter so much?", options: ["Signals travel so fast that small time errors become large distance errors", "Satellites need exact time to stay in orbit", "Phones cannot display microseconds", "The satellites would collide"], answer: 0 },
+        { kind: "inference", q: "What does the writer suggest by calling navigation a daily confirmation of relativity?", options: ["Relativity has no real use", "The theory is tested and relied on every day in ordinary technology", "Satellite navigation proves Einstein wrong", "Physicists invented satellite navigation"], answer: 1 },
+      ],
+      scans: [
+        { q: "How high do the satellites orbit?", find: "20,000 kilometres" },
+        { q: "How far does light travel in a microsecond?", find: "300 metres" },
+        { q: "Which theory says the satellites' speed slows their clocks?", find: "special relativity" },
+      ],
+    },
+    {
+      id: "sky",
+      title: "Why the sky is blue",
+      paragraphs: [
+        "Sunlight looks white, but it is a mixture of every colour of the visible spectrum, each corresponding to a different wavelength. On its way to the ground, this light collides with the nitrogen and oxygen molecules that make up most of the atmosphere. These molecules are far smaller than the wavelength of visible light, and in that situation light is scattered in all directions in a way first described mathematically by the British physicist John William Strutt, later Lord Rayleigh, in 1871.",
+        "The crucial feature of Rayleigh scattering is how strongly it depends on wavelength: the amount of scattering rises with the inverse fourth power of the wavelength. Blue light, at roughly 450 nanometres, is therefore scattered several times more than red light at around 700 nanometres. Wherever you look in a clear sky, you are seeing sunlight that air molecules have redirected towards you, and that redirected light is dominated by shorter wavelengths.",
+        "If shorter wavelengths scatter most, one might expect a violet sky. Two factors prevent it. Sunlight contains less violet than blue to begin with, and human eyes are considerably less sensitive to violet, so the mixture we perceive is sky blue.",
+        "The same physics explains red sunsets. When the Sun is low, its light crosses far more atmosphere before reaching us, and by the time it arrives most of the blue has been scattered out of the direct beam, leaving the oranges and reds.",
+      ],
+      questions: [
+        { kind: "gist", q: "What is the passage mainly about?", options: ["Why the sky is blue and sunsets are red", "How rainbows form", "Why the Sun is yellow", "How eyes see colour"], answer: 0 },
+        { kind: "fact", q: "What mainly scatters sunlight in a clear sky?", options: ["Water droplets", "Nitrogen and oxygen molecules", "Dust from deserts", "The ozone layer"], answer: 1 },
+        { kind: "fact", q: "Why is the sky not violet?", options: ["Violet light is not scattered at all", "Sunlight has less violet and our eyes are less sensitive to it", "Violet is absorbed by the oceans", "Clouds block violet light"], answer: 1 },
+        { kind: "inference", q: "If scattering depended only weakly on wavelength, the sky would probably look…", options: ["Bluer", "Closer to white", "Bright red", "Completely black"], answer: 1 },
+        { kind: "inference", q: "Why is the sunset red rather than blue?", options: ["Low sunlight crosses more air, so most blue is scattered away before it reaches you", "The Sun gives off more red light in the evening", "Red light is scattered most", "Evening air contains no oxygen"], answer: 0 },
+      ],
+      scans: [
+        { q: "In what year was this scattering first described?", find: "1871" },
+        { q: "What is the wavelength of blue light in the passage?", find: "450 nanometres" },
+        { q: "What was Lord Rayleigh's real name?", find: "John William Strutt" },
+      ],
+    },
+    {
+      id: "bias",
+      title: "Looking only for agreement",
+      paragraphs: [
+        "In 1960 the British psychologist Peter Wason gave volunteers a simple puzzle. He told them that the sequence 2, 4, 6 obeyed a rule he had in mind, and asked them to discover the rule by proposing sequences of their own. After each proposal he said whether it fitted the rule, and when they felt confident, they announced their answer.",
+        "Most people quickly formed a hypothesis, such as numbers increasing by two, and then tested it with sequences like 8, 10, 12 or 20, 22, 24. Every one fitted, their confidence grew, and many announced their hypothesis as the rule. It was wrong. Wason's rule was simply any three numbers in ascending order. The volunteers had searched almost exclusively for examples that would confirm their idea, and rarely proposed one, such as 1, 2, 3 or 6, 4, 2, that could have shown it to be false.",
+        "This tendency, now called confirmation bias, appears far beyond the laboratory. People tend to seek out news that supports what they already believe, remember evidence that fits their views more readily than evidence that contradicts them, and interpret ambiguous information as support for their existing position.",
+        "Scientists guard against it deliberately. A well-designed experiment specifies in advance what result would show the hypothesis to be wrong, and techniques such as blind testing keep researchers' expectations from shaping what they observe. For readers, the practical lesson is to ask of any argument not only what supports it, but what would convince you it is false.",
+      ],
+      questions: [
+        { kind: "gist", q: "What is the passage mainly about?", options: ["How a simple puzzle revealed our habit of seeking only evidence that agrees with us", "How to solve number sequences", "Why scientists avoid the news", "Why ascending numbers are special"], answer: 0 },
+        { kind: "fact", q: "What was Wason's actual rule?", options: ["Numbers increasing by two", "Even numbers only", "Any three numbers in ascending order", "Numbers that add up to 12"], answer: 2 },
+        { kind: "fact", q: "What do scientists use to stop expectations shaping what they observe?", options: ["Blind testing", "Larger numbers", "Reading the news", "Announcing results early"], answer: 0 },
+        { kind: "inference", q: "Why did testing 8, 10, 12 not help the volunteers find the rule?", options: ["It fitted both their idea and the real rule, so it could not tell them apart", "Large numbers were not allowed", "Wason gave them wrong answers", "It did not fit the real rule"], answer: 0 },
+        { kind: "inference", q: "A reader who wants to avoid confirmation bias should…", options: ["Read only sources they agree with", "Look for evidence that could prove their view wrong", "Trust their first impression", "Avoid reading arguments at all"], answer: 1 },
+      ],
+      scans: [
+        { q: "In what year was the puzzle given?", find: "1960" },
+        { q: "Who designed the number puzzle?", find: "Peter Wason" },
+        { q: "What name is given to this tendency?", find: "confirmation bias" },
+      ],
+    },
+  ];
+
+  const api = { PASSAGES, ADVANCED_PASSAGES };
   if (typeof window !== "undefined") window.SpellReadingPassages = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();
