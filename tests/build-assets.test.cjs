@@ -8,7 +8,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const distPath = path.join(projectRoot, "dist");
 const publicFiles = [
   "index.html", "style.css", "coach.css", "app.js", "words.js", "ai.js", "tts.js",
-  "sfx.js", "meanings.js", "neural-voice.js", "neural-voice-worker.js", "sounds.js", "word-info.js", "pronounce.js", "learning.js", "learning-ui.js", "chat.js", "reading.js", "reading-generated.js","reading-passages.js", "reading-lesson.js", "packs.js", "packs-world.js", "packs-names.js", "coach.js", "sync.js", "practice-content.js",
+  "sfx.js", "meanings.js", "neural-voice.js", "neural-voice-worker.js", "sounds.js", "word-info.js", "pronounce.js", "learning.js", "learning-ui.js", "chat.js", "reading.js", "reading-generated.js", "reading-passages.js", "reading-lesson.js", "packs.js", "packs-world.js", "packs-names.js", "coach.js", "sync.js", "practice-content.js",
   "sw.js", "manifest.json", "delight.js", "srs.js", "scoring.js",
 ];
 
@@ -37,4 +37,13 @@ test("a fresh build replaces stale output with only the approved public assets",
   } finally {
     await rm(path.join(distPath, ".vercel"), { recursive: true, force: true });
   }
+});
+
+test("the service worker caches every script the page loads, so a new module cannot be missing offline", async () => {
+  const { readFile } = require("node:fs/promises");
+  const html = await readFile(path.join(projectRoot, "index.html"), "utf8");
+  const sw = await readFile(path.join(projectRoot, "sw.js"), "utf8");
+  const scripts = [...html.matchAll(/<script src="([^"?]+\.js)\?v=(\d+)/g)].map((m) => ({ file: m[1], version: m[2] }));
+  assert.ok(scripts.length > 10);
+  for (const { file, version } of scripts) assert.ok(sw.includes(`"./${file}?v=${version}"`), `sw.js APP_SHELL is missing ${file}?v=${version}`);
 });
