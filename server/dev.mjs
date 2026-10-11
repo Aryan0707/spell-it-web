@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import worker from "./worker.mjs";
+import { publicFiles } from "./public-files.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const port = Number(process.env.PORT || 8765);
@@ -17,12 +18,12 @@ const DB = { prepare(sql) { return { bind(...values) { const statement = databas
   first: async () => statement.get(...values) || null,
   run: async () => ({ meta: { changes: Number(statement.run(...values).changes) } }),
 }; } }; } };
-const publicFiles = new Set(["index.html", "style.css", "coach.css", "app.js", "words.js", "ai.js", "tts.js", "sfx.js", "pronounce.js", "meanings.js", "neural-voice.js", "neural-voice-worker.js", "sounds.js", "word-info.js", "delight.js", "learning.js", "learning-ui.js", "chat.js", "reading.js", "reading-daily.js", "reading-passages.js", "reading-lesson.js", "packs.js", "packs-world.js", "packs-names.js", "coach.js", "sync.js", "practice-content.js", "srs.js", "scoring.js", "sw.js", "manifest.json"]);
+const shipped = new Set((await publicFiles(root)).files);
 const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml" };
 const ASSETS = { async fetch(request) {
   const pathname = new URL(request.url).pathname;
   const name = pathname === "/" ? "index.html" : pathname.slice(1);
-  if (!publicFiles.has(name) && !/^icons\/[a-z0-9-]+\.(png|svg)$/.test(name)) return new Response("Not found", { status: 404 });
+  if (!shipped.has(name) && !/^icons\/[a-z0-9-]+\.(png|svg)$/.test(name)) return new Response("Not found", { status: 404 });
   try { return new Response(await readFile(path.join(root, name)), { headers: { "Content-Type": types[path.extname(name)] || "application/octet-stream", "Cache-Control": "no-cache" } }); }
   catch { return new Response("Not found", { status: 404 }); }
 } };

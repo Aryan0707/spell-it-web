@@ -153,6 +153,18 @@
     document.getElementById("reading-view")?.querySelector(`[data-level="${currentLevel()}"]:not([disabled])`)?.click();
   }
 
+  // On the trainer's own front page, a one-line reminder of today's status.
+  function trainerLine() {
+    const state = load();
+    const today = dayKey();
+    const streak = readingStreak(state, today);
+    const text = readToday(state, today)
+      ? `Read today. ${plural(streak, "day")} in a row.`
+      : streak ? `Not read yet today. Keep your ${plural(streak, "day")} going.` : "Read once today to start a streak.";
+    return `<p class="settings-note rd-daily-line">${text}</p>`;
+  }
+  window.SpellReading?.register?.({ id: "daily", home: trainerLine });
+
   function init() {
     const card = document.getElementById("reading-daily");
     if (!card) return;

@@ -2393,3 +2393,4 @@ body{ background: var(--bg); }
 .rd-daily-steps{ margin: 0 0 14px; padding-left: 1.2em; color: var(--ink-soft); font-size: 0.86rem; line-height: 1.6; }
 .rd-daily-steps strong{ color: var(--ink); font-variant-numeric: tabular-nums; }
 .rd-daily .btn{ width: 100%; }
+.rd-daily-line{ margin: 0 0 10px; }
