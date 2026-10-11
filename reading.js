@@ -257,6 +257,7 @@
   }
 
   const isOpen = () => root && root.closest(".screen")?.classList.contains("active");
+  const smoothScroll = () => (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
 
   function stopTimers() {
     if (run?.timer) { clearInterval(run.timer); run.timer = null; }
@@ -421,7 +422,7 @@
         <div class="rd-dock"><button class="btn btn-ghost" data-action="pause">Pause</button></div>`);
     }
     const spans = style === "inline" ? [...root.querySelectorAll(".rd-w")] : [];
-    const lead = style === "flash" ? 800 : 400; // a beat to settle before the first word
+    const lead = window.SpellReadingA11y?.leadMs(style) ?? (style === "flash" ? 800 : 400); // a beat to settle before the first word
     let shown = -1;
     run.paced = { elapsed: -lead, last: performance.now(), paused: false };
     run.startedAt = performance.now() + lead;
@@ -460,7 +461,7 @@
       }
       const box = spans[chunk.first].getBoundingClientRect();
       if (box.top < window.innerHeight * 0.25 || box.bottom > window.innerHeight * 0.7) {
-        spans[chunk.first].scrollIntoView({ block: "center", behavior: "smooth" });
+        spans[chunk.first].scrollIntoView({ block: "center", behavior: smoothScroll() });
       }
     }, 30);
   }
@@ -508,7 +509,7 @@
     const words = root.querySelectorAll(".rd-w");
     for (let i = scan.span.first; i <= scan.span.last; i++) words[i]?.classList.add(hit ? "hit" : "answer");
     if (tapped !== null && !hit) words[tapped]?.classList.add("wrong");
-    if (!hit) words[scan.span.first]?.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (!hit) words[scan.span.first]?.scrollIntoView({ block: "center", behavior: smoothScroll() });
     const result = { hit, seconds: hit ? seconds : null };
     setTimeout(() => isOpen() && run?.scan === scan && startScan(scan.index + 1, [...scan.found, result]), hit ? 700 : 1600);
   }

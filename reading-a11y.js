@@ -315,5 +315,6 @@
   new MutationObserver(enhance).observe(root, { childList: true });
   applySize();
 
+  window.SpellReading?.register?.({ id: "a11y", bind: () => enhance() });
   window.SpellReadingA11y = { ...api, prefs: () => ({ ...prefs }), leadMs: (style) => leadMs(style, prefs) };
 })();
