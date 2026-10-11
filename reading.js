@@ -135,7 +135,10 @@
   }
 
   function passagesFor(level, sets) {
-    return level.texts === "advanced" && sets.ADVANCED_PASSAGES?.length ? sets.ADVANCED_PASSAGES : sets.PASSAGES;
+    const advanced = level.texts === "advanced" && sets.ADVANCED_PASSAGES?.length;
+    const base = advanced ? sets.ADVANCED_PASSAGES : sets.PASSAGES;
+    const extra = sets.generatedFor?.(advanced ? "advanced" : "basic") || []; // AI-made passages (reading-generated.js)
+    return extra.length ? [...base, ...extra] : base;
   }
 
   // ---------- progress ----------

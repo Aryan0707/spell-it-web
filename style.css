@@ -2405,3 +2405,6 @@ body{ background: var(--bg); }
 .rdw-home{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .rdw-home > span{ display: flex; flex-direction: column; gap: 2px; }
 .rdw-home small{ font-size: 0.8rem; color: var(--ink-soft); }
+/* AI-made reading passages card (reading-generated.js) */
+.rg-card .btn{ width: 100%; }
+.rg-status{ min-height: 1.4em; margin: 8px 0; }
