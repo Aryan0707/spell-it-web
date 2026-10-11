@@ -38,3 +38,12 @@ test("a fresh build replaces stale output with only the approved public assets",
     await rm(path.join(distPath, ".vercel"), { recursive: true, force: true });
   }
 });
+
+test("the service worker caches every script the page loads, so a new module cannot be missing offline", async () => {
+  const { readFile } = require("node:fs/promises");
+  const html = await readFile(path.join(projectRoot, "index.html"), "utf8");
+  const sw = await readFile(path.join(projectRoot, "sw.js"), "utf8");
+  const scripts = [...html.matchAll(/<script src="([^"?]+\.js)\?v=(\d+)/g)].map((m) => ({ file: m[1], version: m[2] }));
+  assert.ok(scripts.length > 10);
+  for (const { file, version } of scripts) assert.ok(sw.includes(`"./${file}?v=${version}"`), `sw.js APP_SHELL is missing ${file}?v=${version}`);
+});
