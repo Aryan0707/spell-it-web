@@ -2466,3 +2466,42 @@ body{ background: var(--bg); }
 .rc-rate{ display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .rc-rate .btn{ margin: 0; padding: 8px 2px; min-height: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .rc-rate .btn span{ font-size: 0.68rem; font-weight: 500; color: var(--ink-soft); }
+/* ---------- Listen and read (reading-listen.js) ---------- */
+.ls-card{
+  width: 100%; display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; margin: 0 0 14px;
+  padding: 14px 16px; text-align: left; color: inherit; font: inherit; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--hairline)); border-radius: var(--radius); background: var(--bg-3);
+}
+.ls-card > span:last-child{ display: flex; flex-direction: column; gap: 2px; }
+.ls-card small{ font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--primary); font-weight: 700; }
+.ls-card span span{ font-size: 0.82rem; color: var(--ink-soft); }
+.ls-card .ls-card-icon{ display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 32px; }
+.ls-card-icon > span{ width: 6px; border-radius: 3px; background: var(--primary); }
+.ls-card-icon > span:nth-child(1){ height: 14px; }
+.ls-card-icon > span:nth-child(2){ height: 28px; }
+.ls-card-icon > span:nth-child(3){ height: 20px; }
+.ls-picks{ list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.ls-pick{
+  width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 16px;
+  text-align: left; color: inherit; font: inherit; cursor: pointer; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--bg-3);
+}
+.ls-pick small{ color: var(--ink-soft); font-size: 0.78rem; white-space: nowrap; }
+.ls-text{ font-size: 1.12rem; line-height: 1.8; margin: 8px 0 16px; }
+.ls-text h3{ font-size: 1.2rem; margin: 0 0 12px; }
+.ls-text p{ margin: 0 0 16px; }
+.ls-w{ border-radius: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover){ .ls-w:hover{ background: var(--sheen); } }
+.ls-w.ls-sent{ background: var(--accent-warm-soft); }
+.ls-w.ls-on{ background: var(--primary-ghost); color: var(--primary-light); box-shadow: 0 0 0 2px var(--primary-ghost); }
+.ls-w.ls-tap{ outline: 2px solid var(--primary); outline-offset: 1px; }
+.ls-msg{ margin: 0 0 12px; padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--hairline); background: var(--bg-3); font-size: 0.9rem; }
+.ls-msg[hidden]{ display: none; }
+.ls-dock{ position: sticky; bottom: calc(var(--nav-height) + 8px + env(safe-area-inset-bottom)); z-index: 2; padding: 8px 0; background: var(--bg); border-top: 1px solid var(--hairline); }
+.ls-text + .ls-dock ~ .btn{ width: 100%; margin: 8px 0 0; }
+.ls-controls{ display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+.ls-controls .btn{ margin: 0; width: auto; padding: 10px 16px; flex: none; }
+.ls-speeds{ display: flex; margin-left: auto; border: 1px solid var(--hairline); border-radius: 999px; overflow: hidden; }
+.ls-speed{ padding: 8px 12px; border: 0; background: transparent; color: var(--ink-soft); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.ls-speed.on{ background: var(--primary-ghost); color: var(--primary-light); font-weight: 700; }
+.ls-note{ margin: 8px 0 0; }
+@media (prefers-reduced-motion: no-preference){ .ls-w{ transition: background-color 0.12s, color 0.12s; } }

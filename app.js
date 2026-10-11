@@ -2467,7 +2467,7 @@
     // No more capture-phase interception on the main start button — that would break
     // existing tests and review/due flows that pre-seed localStorage without coach state.
   }
-  window.SpellSpeech = { speak };
+  window.SpellSpeech = { speak, pickVoice: pickBestVoice };
   SpellFeatures.init({
     progress: () => data,
     variant: applyVariant,

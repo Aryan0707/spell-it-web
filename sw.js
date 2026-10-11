@@ -33,6 +33,7 @@ const APP_SHELL = [
   "./reading-generated.js?v=60",
   "./reading-chart.js?v=60",
   "./reading-custom.js?v=60",
+  "./reading-listen.js?v=60",
   "./reading-lesson.js?v=60",
   "./packs.js?v=60",
   "./coach.js?v=60",
