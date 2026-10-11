@@ -173,3 +173,11 @@ test('a skilled reader only moves forward and skips short words; going back cost
   // Each stop lands on a letter, never on a space.
   for (const f of skilled.fixations) assert.match(L.DEMO_TEXT[f], /[A-Za-z]/);
 });
+
+test('the trainer exposes an extension hook for other modules', () => {
+  // The DOM half only exists in a browser; here we check the source wires the hook end to end.
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'reading.js'), 'utf8');
+  assert.match(src, /register: \(ext\) =>/);
+  assert.match(src, /id="rd-extras"/);
+  assert.match(src, /bindExtensions\(\);/);
+});

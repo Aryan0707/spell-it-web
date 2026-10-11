@@ -239,6 +239,14 @@
   let state = emptyState();
   let run = null; // the read in progress: { level, passage, startedAt, ... }
 
+  // Extensions: other files add to the trainer without editing this one. An extension is
+  //   { id, home?(api) => html for the front page, bind?(root, api) => wire it up after the page renders }
+  // and registers itself with SpellReading.register(ext) when its script loads (after reading.js).
+  const extensions = [];
+  const api_ = () => ({ state: () => state, save: () => { save(); }, setState: (next) => { state = next; save(); }, home: renderHome, root: () => root, adapter: () => adapter, escapeHtml });
+  const extensionHtml = () => extensions.map((e) => { try { return e.home?.(api_()) || ""; } catch (err) { console.warn("reading extension", e.id, err); return ""; } }).join("");
+  const bindExtensions = () => extensions.forEach((e) => { try { e.bind?.(root, api_()); } catch (err) { console.warn("reading extension", e.id, err); } });
+
   const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   function load() {
@@ -299,9 +307,11 @@
         <ol class="rd-method-list">${METHOD.map((m) => `<li><strong>${escapeHtml(m.title)}.</strong> ${escapeHtml(m.text)}</li>`).join("")}</ol>
         <p class="settings-note">${escapeHtml(HONEST_NOTE)}</p>
       </details>
+      <div class="rd-extras" id="rd-extras">${extensionHtml()}</div>
       <ol class="rd-levels" aria-label="Levels">${levelRows}</ol>
       <p class="settings-note">Every level needs two thirds of the answers right: 2 of 3 on the basic texts, 4 of 5 on the advanced ones. Effective speed = words per minute × share right.</p>
     `);
+    bindExtensions();
   }
 
   // ---------- lesson ----------
@@ -649,5 +659,5 @@
     for (const button of document.querySelectorAll("[data-open-reading]")) button.addEventListener("click", open);
   }
 
-  window.SpellReading = { init, open, ...api };
+  window.SpellReading = { init, open, register: (ext) => { extensions.push(ext); }, ...api };
 })();
