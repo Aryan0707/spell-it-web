@@ -26,14 +26,14 @@
   const R = typeof window !== "undefined" ? window.SpellReading : require("./reading.js");
 
   // Markdown, HTML, entities and control characters have no place in a passage.
-  const MARKUP = /[<>`*\\{}|\u0000-\u0008\u000b\u000c\u000e-\u001f  ]|__|&[#a-z0-9]+;|^\s*(#|[-+]\s|\d+\.\s)|\]\(/im;
+  const MARKUP = new RegExp("[<>`*\\\\{}|\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u2028\\u2029]|__|&[#a-z0-9]+;|^\\s*(#|[-+]\\s|\\d+\\.\\s)|\\]\\(", "im");
   const clean = (text) => typeof text === "string" && !MARKUP.test(text);
   const oneLine = (text) => clean(text) && !/[\r\n]/.test(text);
   const squash = (text) => text.replace(/\s+/g, " ").trim();
   const norm = (text) => String(text).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
   function slug(text) {
-    return norm(text).replace(/ /g, "-").slice(0, 30).replace(/-+$/, "") || "passage";
+    return norm(text).normalize("NFD").replace(/[^a-z0-9 ]+/g, "").replace(/ +/g, "-").slice(0, 30).replace(/-+$/, "") || "passage";
   }
 
   function hash(text) {
