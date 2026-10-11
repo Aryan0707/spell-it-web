@@ -2556,3 +2556,38 @@ body{ background: var(--bg); }
   .rd-scan-text .rd-w, .rl-eye, .rd-progress span{ transition: none; }
   .rl-eye.hop > span, .rd-lesson-eye > span{ animation: none; }
 }
+
+/* ---------- Eyes and brain: research-based eye model (reading-lesson.js) ---------- */
+.rl-recognise{ color: var(--ink); background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.rl-sw.recognise{ background: color-mix(in srgb, var(--primary) 8%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 45%, transparent); }
+/* Saccadic suppression: during a jump the reader takes in nothing, so the letters drop away. */
+.rl-line.rl-jumping > span[data-c]{ opacity: 0.18; transition: none; }
+.rl-eye{ transition-property: transform; transition-timing-function: ease-in-out; }
+.rl-eye[data-kind="regress"] > span{ background: var(--c-coral); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-coral) 25%, transparent); }
+.rl-eye[data-kind="return"] > span, .rl-eye[data-kind="correct"] > span{ background: var(--c-sky); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-sky) 25%, transparent); }
+.rl-slow{ display: flex; gap: 10px; align-items: center; min-height: 44px; font-size: 0.85rem; color: var(--ink-soft); cursor: pointer; }
+.rl-slow input{ width: 18px; height: 18px; accent-color: var(--primary); }
+.rl-tag{ margin: 14px 0 0; font-size: 0.8rem; font-weight: 700; color: var(--ink); }
+.rl-tag span{ font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; margin-left: 6px; }
+.rl-tag + .rl-line{ margin-top: 6px; }
+/* The eye's path after a run: like an eye tracker's scanpath. Bigger circle = longer stop. */
+.rl-path{ position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.rl-jump{ stroke: var(--primary); stroke-width: 1.5; opacity: 0.55; }
+.rl-jump.back{ stroke: var(--c-coral); stroke-dasharray: 4 3; opacity: 0.9; }
+.rl-jump.sweep{ stroke: var(--c-sky); stroke-dasharray: 1 4; stroke-linecap: round; }
+.rl-stop circle{ fill: color-mix(in srgb, var(--primary) 22%, transparent); stroke: var(--primary); stroke-width: 1.2; }
+.rl-stop.regress circle{ fill: color-mix(in srgb, var(--c-coral) 22%, transparent); stroke: var(--c-coral); }
+.rl-stop.return circle, .rl-stop.correct circle{ fill: color-mix(in srgb, var(--c-sky) 22%, transparent); stroke: var(--c-sky); }
+.rl-stop text{ font: 700 9px/1 ui-sans-serif, system-ui, sans-serif; fill: var(--ink); text-anchor: middle; }
+@media (prefers-reduced-motion: no-preference){
+  .rl-path.animate .rl-stop{ opacity: 0; animation: rl-pop 0.25s ease-out forwards; animation-delay: calc(var(--i) * 60ms); }
+  .rl-path.animate .rl-jump{ opacity: 0; animation: rl-fade 0.3s ease-out forwards; animation-delay: 0.1s; }
+}
+@keyframes rl-pop{ from{ opacity: 0; transform: scale(0.4); transform-origin: center; transform-box: fill-box; } to{ opacity: 1; transform: scale(1); transform-box: fill-box; } }
+@keyframes rl-fade{ to{ opacity: 0.6; } }
+.rl-eye.idle{ opacity: 0; }
+.rl-stop circle{ stroke-width: 1.5; }
+.rl-path-key{ display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 0; font-size: 0.75rem; color: var(--ink-soft); }
+.rl-path-key i{ display: inline-block; width: 18px; height: 0; margin-right: 6px; vertical-align: middle; border-top: 2px solid var(--primary); }
+.rl-path-key i.back{ border-top: 2px dashed var(--c-coral); }
+.rl-path-key i.sweep{ border-top: 2px dotted var(--c-sky); }

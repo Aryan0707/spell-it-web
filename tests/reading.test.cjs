@@ -196,3 +196,63 @@ test('paced levels speed up after a perfect read, hold after a pass, and ease of
   s = R.recordResult(s, 2, { wpm: R.targetFor(s, 2), share: 0 }, 'tides').state;
   assert.ok(R.targetFor(s, 2) < Math.round(first * 1.05));
 });
+
+test('a short word ending within reach to the right can be recognised whole; further right is only a preview', () => {
+  assert.equal(L.zoneFor(4), 'recognise');
+  assert.equal(L.zoneFor(7), 'recognise');
+  assert.equal(L.zoneFor(8), 'preview');
+  assert.equal(L.zoneFor(-4), 'preview'); // the left side has no recognition zone
+});
+
+test('stops last longer on long and rare words and shorter on predictable ones, within real ranges', () => {
+  assert.ok(L.fixationMs('the') < L.fixationMs('laboratory'));
+  assert.ok(L.fixationMs('octopuses') > L.fixationMs('readers')); // rare vs common, similar length
+  assert.ok(L.fixationMs('umbrella', { predictable: true }) < L.fixationMs('umbrella'));
+  for (const w of ['a', 'the', 'surprisingly', 'extraordinarily']) {
+    const ms = L.fixationMs(w);
+    assert.ok(ms >= 150 && ms <= 420, `${w}: ${ms} ms`);
+  }
+  assert.ok(L.saccadeMs(8) >= 20 && L.saccadeMs(8) <= 40);
+});
+
+test('the skilled model reads like an adult: about a quarter of words skipped, 200-250 ms stops, few jumps back', () => {
+  const plan = L.planReading(L.DEMO_TEXT, { profile: 'skilled' });
+  const words = L.DEMO_TEXT.split(/\s+/).length;
+  const skipRate = plan.skipped.length / words;
+  assert.ok(skipRate >= 0.15 && skipRate <= 0.4, `skip rate ${skipRate}`);
+  const mean = plan.fixations.reduce((s, f) => s + f.ms, 0) / plan.fixations.length;
+  assert.ok(mean >= 200 && mean <= 250, `mean ${mean}`);
+  const race = L.planReading(L.RACE_TEXT, { profile: 'skilled' });
+  assert.ok(race.backs / race.fixations.length <= 0.15, 'jumps back stay rare for a skilled reader');
+});
+
+test('a developing reader fixates every word, stops longer and goes back more, so takes over twice as long', () => {
+  const skilled = L.planReading(L.RACE_TEXT, { profile: 'skilled' });
+  const dev = L.planReading(L.RACE_TEXT, { profile: 'developing' });
+  assert.equal(dev.skipped.length, 0);
+  assert.ok(dev.backs > skilled.backs);
+  assert.ok(dev.totalMs > 2 * skilled.totalMs);
+  assert.ok(dev.fixations.some((f) => f.kind === 'refix'), 'long words get a second stop');
+});
+
+test('the jump to a new line lands too far right, then a short jump left corrects it', () => {
+  const plan = L.planReading(L.DEMO_TEXT, { lineStarts: [40, 80, 120] });
+  const i = plan.fixations.findIndex((f) => f.kind === 'return');
+  assert.ok(i > 0);
+  assert.equal(plan.fixations[i + 1].kind, 'correct');
+  assert.ok(plan.fixations[i + 1].at < plan.fixations[i].at, 'the correction goes left');
+  assert.ok(plan.fixations[i].at >= 40, 'it lands on the new line');
+});
+
+test('guessable words in context get shorter stops or are skipped, compared with the same words scrambled', () => {
+  const inContext = L.planReading(L.CONTEXT.natural, { predictable: L.CONTEXT.predictable });
+  const scrambled = L.planReading(L.CONTEXT.scrambled);
+  assert.ok(inContext.totalMs < scrambled.totalMs);
+  const msFor = (plan, text, word) => {
+    const k = text.split(/\s+/).findIndex((w) => w.replace(/[^A-Za-z]/g, '').toLowerCase() === word);
+    return plan.fixations.filter((f) => f.word === k).reduce((s, f) => s + f.ms, 0);
+  };
+  for (const word of ['rain', 'umbrella', 'home']) {
+    assert.ok(msFor(inContext, L.CONTEXT.natural, word) < msFor(scrambled, L.CONTEXT.scrambled, word), word);
+  }
+});

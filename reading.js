@@ -44,7 +44,7 @@
       why: "Readers often jump back to words they already read without noticing. A pacer stops that habit, which alone makes reading faster.",
       steps: ["Follow the highlight with your eyes. Do not look back.", "If you miss a word, keep going: the meaning usually comes back from the next sentence.", "Off the app, use a finger or pen under the line the same way."] },
     { n: 3, tier: "Intermediate", name: "Read in phrases", drill: "pacer", chunk: 3, boost: 1.3, short: "Take in a few words at a time.",
-      why: "Your eyes stop a few times on each line. Each stop can take in more than one word, so reading in phrases means fewer stops for the same text.",
+      why: "Your eyes still stop on most words: each stop sees about 7 letters clearly. But a short word right after the one you are looking at can be recognised from the preview and skipped, and grouping words into meaningful phrases lets your brain build meaning as you go, so you keep moving forward instead of going back.",
       steps: ["Look at the middle of each highlighted phrase and take it in as one idea.", "Let your inner voice say the phrase, not each word.", "Keep up with the highlight even if it feels fast."] },
     { n: 4, tier: "Intermediate", name: "Preview, then read", drill: "preview", chunk: 3, boost: 1.4, short: "Get the big picture first, then read faster.",
       why: "Knowing where a text is going lets you read it faster and remember more. A short preview of the opening sentences builds that map.",
