@@ -1,5 +1,6 @@
 import { mkdir, copyFile, cp, rm, readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { publicFiles } from "./public-files.mjs";
 
 const root = new URL("../", import.meta.url);
 const destination = new URL("../dist/", import.meta.url);
@@ -7,16 +8,7 @@ const destination = new URL("../dist/", import.meta.url);
 await rm(destination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
 
-// Explicit list of non-JS entry files that must ship.
-const REQUIRED = ["index.html", "style.css", "coach.css", "sw.js", "manifest.json"];
-
-// Auto-discover every top-level .js file so a new module can't be forgotten.
-const entries = await readdir(root, { withFileTypes: true });
-const jsFiles = entries
-  .filter((d) => d.isFile() && d.name.endsWith(".js"))
-  .map((d) => d.name);
-
-const files = [...new Set([...REQUIRED, ...jsFiles])];
+const { jsFiles, files } = await publicFiles(root);
 
 // Sanity-check that every .js file referenced by index.html is present on disk.
 const html = await readFile(new URL("index.html", root), "utf8");
