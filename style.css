@@ -2394,3 +2394,14 @@ body{ background: var(--bg); }
 .rd-daily-steps strong{ color: var(--ink); font-variant-numeric: tabular-nums; }
 .rd-daily .btn{ width: 100%; }
 .rd-daily-line{ margin: 0 0 10px; }
+/* Reading to spelling: tappable words on the result screen, and the front-page card */
+.rdw-keep .rdw-text{ margin: 10px 0; line-height: 1.8; }
+.rdw-keep .rdw-text p{ margin: 0 0 10px; }
+.rdw-word{ font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px dotted var(--ink-soft); padding: 0 1px; margin: 0; border-radius: 3px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover){ .rdw-word:hover{ background: var(--sheen); } }
+.rdw-word:focus-visible{ outline: 2px solid var(--primary); outline-offset: 1px; }
+.rdw-word.saved{ background: var(--primary-ghost); color: var(--primary-light); border-bottom: 1px solid var(--primary); }
+.rdw-status{ min-height: 1.4em; margin: 6px 0 10px; font-size: 0.85rem; color: var(--ink-soft); }
+.rdw-home{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rdw-home > span{ display: flex; flex-direction: column; gap: 2px; }
+.rdw-home small{ font-size: 0.8rem; color: var(--ink-soft); }

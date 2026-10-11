@@ -245,6 +245,8 @@
   const extensions = [];
   const api_ = () => ({ state: () => state, save: () => { save(); }, setState: (next) => { state = next; save(); }, home: renderHome, root: () => root, adapter: () => adapter, escapeHtml });
   const extensionHtml = () => extensions.map((e) => { try { return e.home?.(api_()) || ""; } catch (err) { console.warn("reading extension", e.id, err); return ""; } }).join("");
+  // afterResult?(root, api, ctx): called once the result screen is drawn; may add a section to it.
+  const afterResult = (ctx) => extensions.forEach((e) => { try { e.afterResult?.(root, api_(), ctx); } catch (err) { console.warn("reading extension", e.id, err); } });
   const bindExtensions = () => extensions.forEach((e) => { try { e.bind?.(root, api_()); } catch (err) { console.warn("reading extension", e.id, err); } });
 
   const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -600,6 +602,7 @@
       ${canNext ? `<button class="btn btn-primary btn-big" data-level="${level.n + 1}">Next: ${escapeHtml(LEVELS[level.n].name)}</button>` : ""}
       <button class="btn ${canNext ? "btn-ghost" : "btn-primary btn-big"}" data-level="${level.n}">Try again with a new passage</button>
       <button class="btn btn-ghost" data-action="home">Back to levels</button>`);
+    afterResult({ level, passage });
   }
 
   // ---------- wiring ----------
