@@ -6,7 +6,7 @@
   "use strict";
 
   const MAX_POINTS = 30;
-  const VIEW = { w: 340, h: 230, left: 40, right: 14, top: 16, bottom: 30 };
+  const VIEW = { w: 340, h: 230, left: 40, right: 56, top: 16, bottom: 30 };
 
   const effective = (r) => Math.round((r.wpm || 0) * (r.share || 0));
 
@@ -109,8 +109,8 @@
 
     const grid = g.yTicks.map((t) => `<line class="rc-grid" x1="${plot.left}" x2="${plot.right}" y1="${t.y}" y2="${t.y}"/><text class="rc-tick" x="${plot.left - 6}" y="${t.y + 3.5}" text-anchor="end">${t.v}</text>`).join("");
     const line = g.points.length > 1 ? `<polyline class="rc-line" points="${g.points.map((p) => `${p.x},${p.y}`).join(" ")}"/>` : "";
-    const refs = (g.baselineY !== null ? `<line class="rc-ref rc-start" x1="${plot.left}" x2="${plot.right}" y1="${g.baselineY}" y2="${g.baselineY}"/><text class="rc-reflabel" x="${plot.right}" y="${g.baselineY + 12}" text-anchor="end">Start ${state.baseline}</text>` : "")
-      + (g.goalY !== null ? `<line class="rc-ref rc-goal" x1="${plot.left}" x2="${plot.right}" y1="${g.goalY}" y2="${g.goalY}"/><text class="rc-reflabel" x="${plot.right}" y="${g.goalY - 5}" text-anchor="end">Goal ${goal}</text>` : "");
+    const refs = (g.baselineY !== null ? `<line class="rc-ref rc-start" x1="${plot.left}" x2="${plot.right}" y1="${g.baselineY}" y2="${g.baselineY}"/><text class="rc-reflabel" x="${plot.right + 5}" y="${g.baselineY + 3.5}">Start ${state.baseline}</text>` : "")
+      + (g.goalY !== null ? `<line class="rc-ref rc-goal" x1="${plot.left}" x2="${plot.right}" y1="${g.goalY}" y2="${g.goalY}"/><text class="rc-reflabel" x="${plot.right + 5}" y="${g.goalY + 3.5}">Goal ${goal}</text>` : "");
     const xs = `<text class="rc-tick" x="${g.points[0].x}" y="${VIEW.h - 10}" text-anchor="${g.points.length > 1 ? "start" : "middle"}">Read ${first.read}</text>`
       + (g.points.length > 1 ? `<text class="rc-tick" x="${g.points[g.points.length - 1].x}" y="${VIEW.h - 10}" text-anchor="end">Read ${last.read}</text>` : "");
     const dots = g.points.map((p, i) => `<g class="rc-pt" tabindex="0" role="button" data-i="${i}" aria-label="${escapeHtml(pointLabel(p))}"><circle class="rc-hit" cx="${p.x}" cy="${p.y}" r="15"/>${marker(p)}</g>`).join("");
