@@ -544,6 +544,7 @@
     state = outcome.state;
     save();
     adapter?.onResult?.();
+    window.dispatchEvent(new CustomEvent("spellit:reading-result", { detail: { level: run.level.n, passed: outcome.passed } }));
     renderResult({ wpm, share, right, total, outcome, before });
   }
 
