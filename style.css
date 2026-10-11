@@ -2219,3 +2219,142 @@ body{ background: var(--bg); }
 .study-note-box textarea { resize: vertical; font-family: inherit; line-height: 1.45; user-select: text; -webkit-user-select: text; }
 .study-note-box .settings-note { margin: 0; min-height: 1.2em; font-size: 0.82rem; }
 .word-detail-note { margin: 6px 0 0; padding: 8px 10px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; font-size: 0.9rem; color: var(--ink); }
+
+/* ============================================================
+   Speed reading trainer (reading.js)
+   ============================================================ */
+#reading-view{ padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.rd-title{ font-size: 1.5rem; letter-spacing: -0.03em; margin: 6px 0 16px; }
+.rd-stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin: 0 0 16px; }
+.rd-stats > div{ display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--bg-3); }
+.rd-stats strong{ font-size: 1.4rem; font-variant-numeric: tabular-nums; color: var(--primary); }
+.rd-stats span{ font-size: 0.72rem; color: var(--ink-soft); text-align: center; }
+.rd-method{ margin: 4px 0 18px; }
+.rd-method summary{ cursor: pointer; list-style-position: inside; }
+.rd-method-list, .rd-steps{ padding-left: 20px; line-height: 1.6; color: var(--ink-soft); }
+.rd-method-list li, .rd-steps li{ margin: 8px 0; }
+.rd-method-list strong{ color: var(--ink); }
+.rd-levels{ list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 10px; }
+.rd-level{
+  --lv: var(--c-mint);
+  width: 100%; display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center;
+  padding: 12px 14px; text-align: left; color: inherit; font: inherit; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--lv) 22%, var(--hairline)); border-radius: var(--radius); background: var(--bg-3);
+}
+.rd-levels li:nth-child(3) .rd-level, .rd-levels li:nth-child(4) .rd-level{ --lv: var(--c-amber); }
+.rd-levels li:nth-child(n+5) .rd-level{ --lv: var(--c-coral); }
+.rd-level.current{ border-color: var(--lv); box-shadow: 0 0 0 1px var(--lv) inset; }
+.rd-level.locked{ opacity: 0.45; cursor: not-allowed; }
+.rd-level-num{ width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; font-weight: 700; color: var(--lv); background: color-mix(in srgb, var(--lv) 14%, transparent); }
+.rd-level.done .rd-level-num{ background: var(--lv); color: var(--bg); }
+.rd-level-text{ display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rd-level-text small{ font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lv); font-weight: 700; }
+.rd-level-text span{ font-size: 0.82rem; color: var(--ink-soft); }
+.rd-pace{ display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--hairline); }
+.rd-pace span{ color: var(--ink-soft); font-size: 0.85rem; }
+.rd-pace strong{ color: var(--primary); }
+
+.rd-passage{ font-size: 1.12rem; line-height: 1.75; margin: 8px 0 20px; }
+.rd-passage h3{ font-size: 1.2rem; margin: 0 0 12px; }
+.rd-passage p{ margin: 0 0 16px; }
+.rd-w{ border-radius: 4px; transition: background-color 0.12s, color 0.12s; }
+.rd-w.past{ color: var(--ink-soft); }
+.rd-w.on{ background: var(--primary-ghost); color: var(--primary-light); box-shadow: 0 0 0 2px var(--primary-ghost); }
+.rd-preview{ background: var(--accent-warm-soft); color: inherit; border-radius: 4px; padding: 1px 2px; }
+.rd-dim{ opacity: 0.28; }
+.rd-flash{ display: grid; place-items: center; min-height: 140px; margin: 24px 0 12px; padding: 16px; border: 1px solid var(--hairline-strong); border-radius: var(--radius-lg); background: var(--bg-3); }
+.rd-flash span{ font-size: 1.8rem; font-weight: 600; text-align: center; letter-spacing: -0.01em; }
+.rd-progress{ height: 4px; border-radius: 99px; background: var(--hairline); overflow: hidden; margin-bottom: 16px; }
+.rd-progress span{ display: block; height: 100%; width: 0; background: var(--primary); transition: width 0.2s linear; }
+.rd-dock{ position: sticky; bottom: calc(var(--nav-height) + 8px + env(safe-area-inset-bottom)); padding-top: 8px; background: linear-gradient(transparent, var(--bg) 40%); }
+.rd-dock .btn{ width: 100%; margin: 0; }
+
+.rd-quiz fieldset{ margin: 0 0 12px; }
+.rd-quiz legend{ padding: 0; margin-bottom: 8px; line-height: 1.45; }
+.rd-choice{ display: flex; gap: 10px; align-items: flex-start; padding: 10px 4px; border-top: 1px solid var(--hairline); cursor: pointer; line-height: 1.4; }
+.rd-choice input{ margin-top: 3px; accent-color: var(--primary); }
+.rd-scan-q{ position: sticky; top: 0; z-index: 2; margin-bottom: 12px; }
+.rd-options{ display: grid; gap: 6px; margin-top: 10px; }
+.rd-options .btn{ margin: 0; text-align: left; justify-content: flex-start; min-height: 0; padding: 10px 12px; }
+.rd-message{ padding: 14px 16px; border-radius: var(--radius); line-height: 1.5; font-weight: 600; }
+.rd-message.pass{ background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+.rd-message.fail{ background: var(--accent-warm-soft); color: var(--accent-warm); }
+.rd-review{ list-style: none; padding: 0; margin: 14px 0 18px; display: grid; gap: 8px; }
+.rd-review li{ padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius); line-height: 1.45; }
+.rd-review li > span{ font-weight: 700; margin-right: 4px; }
+.rd-review li.ok > span{ color: var(--good); }
+.rd-review li.miss > span{ color: var(--bad); }
+.rd-review small{ color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce){ .rd-w, .rd-progress span{ transition: none; } }
+
+/* ---------- Eyes and brain lesson (reading-lesson.js) ---------- */
+.rd-lesson-card{
+  width: 100%; display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; margin: 0 0 14px;
+  padding: 14px 16px; text-align: left; color: inherit; font: inherit; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--c-sky) 35%, var(--hairline)); border-radius: var(--radius); background: var(--bg-3);
+}
+.rd-lesson-card > span:last-child{ display: flex; flex-direction: column; gap: 2px; }
+.rd-lesson-card small{ font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-sky); font-weight: 700; }
+.rd-lesson-card span span{ font-size: 0.82rem; color: var(--ink-soft); }
+/* A small eye whose pupil hops, pauses and hops again, like a reading eye. */
+.rd-lesson-eye{ width: 52px; height: 32px; display: grid; place-items: center; border: 2px solid var(--c-sky); border-radius: 50% / 50%; }
+.rd-lesson-eye > span{ width: 12px; height: 12px; border-radius: 50%; background: var(--c-sky); animation: rd-pupil 2.4s infinite; }
+@keyframes rd-pupil{
+  0%, 28%{ transform: translateX(-10px); } 33%, 61%{ transform: translateX(0); }
+  66%, 94%{ transform: translateX(10px); } 100%{ transform: translateX(-10px); }
+}
+
+.rl-section{ margin-bottom: 14px; line-height: 1.6; }
+.rl-section > p{ color: var(--ink-soft); }
+.rl-section summary{ cursor: pointer; }
+.rl-line{
+  position: relative; margin: 14px 0 10px; padding: 16px 12px 10px; border-radius: var(--radius); background: var(--slot-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.98rem; line-height: 2.8; white-space: pre-wrap; word-break: break-word;
+}
+.rl-line > span[data-c]{ border-radius: 3px; transition: background-color 0.12s, color 0.12s; }
+.rl-fix{ color: var(--bg); background: var(--primary); }
+.rl-sharp{ color: var(--ink); background: var(--primary-ghost); }
+.rl-preview{ color: var(--ink-soft); }
+.rl-hidden{ color: color-mix(in srgb, var(--ink-soft) 35%, transparent); }
+/* The eye marker: the outer box jumps (the saccade, fast); the dot lands and settles (the fixation). */
+.rl-eye{ position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; transition: transform 0.04s linear; z-index: 1; }
+.rl-eye > span{ position: absolute; left: -4px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-warm); box-shadow: 0 0 0 3px var(--accent-warm-soft); }
+.rl-eye > span::after{ content: ""; position: absolute; left: 3px; top: 8px; width: 2px; height: 4px; border-radius: 1px; background: var(--accent-warm); }
+.rl-eye.hop > span{ animation: rl-land 0.25s ease-out; }
+@keyframes rl-land{
+  0%{ transform: translateY(-6px) scale(0.6); opacity: 0.4; }
+  25%{ transform: translateY(0) scale(1.2); opacity: 1; }
+  100%{ transform: translateY(0) scale(1); }
+}
+.rl-legend{ display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.78rem; color: var(--ink-soft); }
+.rl-sw{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.rl-sw.sharp{ background: var(--primary-ghost); box-shadow: 0 0 0 1px var(--primary); }
+.rl-sw.preview{ background: var(--bg-3); box-shadow: 0 0 0 1px var(--hairline-strong); }
+.rl-sw.hidden{ box-shadow: 0 0 0 1px var(--hairline); }
+.rl-buttons{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.rl-buttons .btn{ margin: 0; padding-left: 10px; padding-right: 10px; }
+.rl-stats{ margin-bottom: 6px; }
+.rl-loop{ list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; counter-reset: loop; }
+.rl-loop li{
+  counter-increment: loop; display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--radius);
+  border: 1px solid var(--hairline); color: var(--ink-soft); font-size: 0.82rem; line-height: 1.45;
+  transition: border-color 0.3s, background-color 0.3s, transform 0.3s var(--ease);
+}
+.rl-loop li strong{ color: var(--ink); font-size: 0.95rem; }
+.rl-loop li strong::before{ content: counter(loop) " · "; color: var(--ink-soft); font-weight: 600; }
+.rl-loop li.active{ border-color: var(--primary); background: var(--primary-ghost); transform: scale(1.03); }
+.rl-loop li.active strong{ color: var(--primary-light); }
+.rl-predict{ padding: 10px 0; border-top: 1px solid var(--hairline); }
+.rl-predict p{ margin: 0 0 8px; color: var(--ink); }
+.rl-blank{ color: var(--primary); font-weight: 700; }
+.rl-choices{ display: flex; flex-wrap: wrap; gap: 6px; }
+.rl-choices .btn{ margin: 0; width: auto; min-height: 0; padding: 8px 14px; }
+.rl-choices .rl-right{ border-color: var(--good); color: var(--good); }
+.rl-choices .rl-wrong{ border-color: var(--bad); color: var(--bad); }
+.rd-summary-check p{ margin: 0 0 8px; }
+.rd-summary-check p > span{ display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 700; }
+@media (prefers-reduced-motion: reduce){
+  .rd-lesson-eye > span, .rl-eye.hop > span{ animation: none; }
+  .rl-eye, .rl-loop li, .rl-line > span[data-c]{ transition: none; }
+  .rl-loop li.active{ transform: none; }
+}

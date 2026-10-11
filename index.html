@@ -9,10 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="Spell It" />
 <title>Spell It</title>
 <link rel="manifest" href="manifest.json" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=57" />
-<link rel="icon" href="icons/favicon-32.png?v=57" sizes="32x32" />
-<link rel="stylesheet" href="style.css?v=57" />
-<link rel="stylesheet" href="coach.css?v=57" id="coach-css" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=59" />
+<link rel="icon" href="icons/favicon-32.png?v=59" sizes="32x32" />
+<link rel="stylesheet" href="style.css?v=59" />
+<link rel="stylesheet" href="coach.css?v=59" id="coach-css" />
 </head>
 <body>
 <div id="app">
@@ -24,7 +24,7 @@
       <!-- Top brand row -->
       <header class="home-header">
         <div class="home-brand">
-          <img class="logo-icon" src="icons/icon-192.png?v=57" alt="" />
+          <img class="logo-icon" src="icons/icon-192.png?v=59" alt="" />
           <span>Spell It</span>
         </div>
         <button class="icon-btn header-icon" id="btn-header-progress" aria-label="Your progress">
@@ -100,6 +100,12 @@
         <button class="btn btn-primary btn-big" id="btn-path-start">Start Level 1</button>
         <ol id="path-levels" class="path-levels"></ol>
         <p class="path-note">Learn → copy → recall → final check. Only the final check unlocks the next lesson.</p>
+      </section>
+
+      <section class="daily-card" aria-labelledby="reading-heading">
+        <div class="daily-heading"><h2 id="reading-heading">Speed reading</h2></div>
+        <p>Read faster and still understand. Seven levels from basic to advanced, each teaching one technique.</p>
+        <button class="btn btn-primary" type="button" data-open-reading>Open reading trainer</button>
       </section>
 
       <section class="daily-card packs-card" aria-labelledby="packs-heading">
@@ -453,6 +459,11 @@
     </div>
   </section>
 
+  <section id="screen-reading" class="screen">
+    <header class="settings-header"><button class="icon-btn feature-back" data-back="learn" aria-label="Back to Learn">←</button><h2>Speed reading</h2></header>
+    <div class="settings-body" id="reading-view"></div>
+  </section>
+
   <section id="screen-sync" class="screen">
     <header class="settings-header"><button class="icon-btn" id="btn-sync-back" aria-label="Back to settings">←</button><h2>Devices &amp; backup</h2></header>
     <div class="settings-body">
@@ -721,27 +732,30 @@
   </nav>
 
 </div>
-<script src="words.js?v=57"></script>
-<script src="ai.js?v=57"></script>
-<script src="tts.js?v=57"></script>
-<script src="neural-voice.js?v=57"></script>
-<script src="meanings.js?v=57"></script>
-<script src="sounds.js?v=57"></script>
-<script src="word-info.js?v=57"></script>
-<script src="pronounce.js?v=57"></script>
-<script src="sfx.js?v=57"></script>
-<script src="delight.js?v=57"></script>
-<script src="practice-content.js?v=57"></script>
-<script src="srs.js?v=57"></script>
-<script src="scoring.js?v=57"></script>
-<script src="learning.js?v=57"></script>
-<script src="learning-ui.js?v=57"></script>
-<script src="chat.js?v=57"></script>
-<script src="packs.js?v=57"></script>
+<script src="words.js?v=59"></script>
+<script src="ai.js?v=59"></script>
+<script src="tts.js?v=59"></script>
+<script src="neural-voice.js?v=59"></script>
+<script src="meanings.js?v=59"></script>
+<script src="sounds.js?v=59"></script>
+<script src="word-info.js?v=59"></script>
+<script src="pronounce.js?v=59"></script>
+<script src="sfx.js?v=59"></script>
+<script src="delight.js?v=59"></script>
+<script src="practice-content.js?v=59"></script>
+<script src="srs.js?v=59"></script>
+<script src="scoring.js?v=59"></script>
+<script src="learning.js?v=59"></script>
+<script src="learning-ui.js?v=59"></script>
+<script src="chat.js?v=59"></script>
+<script src="reading-passages.js?v=59"></script>
+<script src="reading.js?v=59"></script>
+<script src="reading-lesson.js?v=59"></script>
+<script src="packs.js?v=59"></script>
 <!-- Word packs (packs-world.js, packs-names.js) load on demand. Packs this device already uses load now, before the app starts. -->
-<script>try{var p=JSON.parse(localStorage.getItem("spellit_packs"));if(Array.isArray(p))p.forEach(function(id){if(/^[a-z]+$/.test(id))document.write("<script src='packs-"+id+".js?v=57'><\/script>")})}catch(e){}</script>
-<script src="coach.js?v=57"></script>
-<script src="sync.js?v=57"></script>
-<script src="app.js?v=57"></script>
+<script>try{var p=JSON.parse(localStorage.getItem("spellit_packs"));if(Array.isArray(p))p.forEach(function(id){if(/^[a-z]+$/.test(id))document.write("<script src='packs-"+id+".js?v=59'><\/script>")})}catch(e){}</script>
+<script src="coach.js?v=59"></script>
+<script src="sync.js?v=59"></script>
+<script src="app.js?v=59"></script>
 </body>
 </html>

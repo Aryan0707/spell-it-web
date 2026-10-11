@@ -28,6 +28,7 @@
     learn: el("screen-learn"),
     practice: el("screen-practice"),
     me: el("screen-me"),
+    reading: el("screen-reading"),
   };
 
   const ui = {
@@ -1625,7 +1626,7 @@
     if (name !== "learn" && aiGeneration) cancelAILesson();
     for (const key in screens) screens[key].classList.toggle("active", key === name);
     // Pages opened from the You tab keep that tab lit.
-    const tab = { lists: "me", notebook: "me", history: "me", settings: "me", sync: "me" }[name] || name;
+    const tab = { lists: "me", notebook: "me", history: "me", settings: "me", sync: "me", reading: "learn" }[name] || name;
     document.querySelectorAll(".bottom-nav-item").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.screen === tab);
     });
@@ -2487,6 +2488,7 @@
       ui.inputApiKey.focus();
     },
   });
+  window.SpellReading?.init({ show: showScreen });
   updatePracticeSummary();
   screens.practice.addEventListener("click", (event) => {
     if (event.target.closest(".chip, .mode-btn")) updatePracticeSummary();
