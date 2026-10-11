@@ -181,3 +181,18 @@ test('the trainer exposes an extension hook for other modules', () => {
   assert.match(src, /id="rd-extras"/);
   assert.match(src, /bindExtensions\(\);/);
 });
+
+test('paced levels speed up after a perfect read, hold after a pass, and ease off after a fail', () => {
+  assert.equal(R.adaptTarget(300, { wpm: 300, share: 1 }), 315);
+  assert.equal(R.adaptTarget(300, { wpm: 300, share: 4 / 5 }), 300);
+  assert.equal(R.adaptTarget(300, { wpm: 300, share: 2 / 3 }), 300);
+  assert.equal(R.adaptTarget(300, { wpm: 300, share: 3 / 5 }), 276);
+  assert.equal(R.adaptTarget(300, { wpm: 300, share: 0 }), 276);
+  // The new pace is what the next read of that level starts at, kept within the allowed range.
+  let s = R.recordResult(R.emptyState(), 1, { wpm: 250, share: 1 }, 'salt').state;
+  const first = R.targetFor(s, 2);
+  s = R.recordResult(s, 2, { wpm: first, share: 1 }, 'bees').state;
+  assert.equal(R.targetFor(s, 2), Math.round(first * 1.05));
+  s = R.recordResult(s, 2, { wpm: R.targetFor(s, 2), share: 0 }, 'tides').state;
+  assert.ok(R.targetFor(s, 2) < Math.round(first * 1.05));
+});

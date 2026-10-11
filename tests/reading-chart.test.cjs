@@ -65,3 +65,15 @@ test('signed uses a real minus', () => {
   assert.equal(C.signed(-7), '−7');
   assert.equal(C.signed(0), '0');
 });
+
+test('change since start compares effective speed with the effective speed of the read that set the baseline', () => {
+  // The first read ran at 250 wpm with 2 of 3 right (effective 167) and set the baseline. A later read at
+  // 250 wpm with everything right is a real gain, not a drop from 250 to 250.
+  const series = C.chartSeries([
+    { at: 1, level: 1, wpm: 250, share: 2 / 3, passed: true },
+    { at: 2, level: 2, wpm: 250, share: 1, passed: true },
+  ]);
+  const sum = C.summarize(series, 250);
+  assert.equal(sum.start, 167);
+  assert.equal(sum.change, 83);
+});

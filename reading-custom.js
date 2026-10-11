@@ -249,8 +249,8 @@
 
   const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
   const isOpen = () => root && root.closest(".screen")?.classList.contains("active");
-  // True while one of this file's reading screens is showing (they all carry .rc-live).
-  const alive = () => isOpen() && root.querySelector(".rc-live");
+  // True while one of this file's reading screens is showing (they all carry .rcu-live).
+  const alive = () => isOpen() && root.querySelector(".rcu-live");
 
   function show(html) {
     stop();
@@ -264,12 +264,12 @@
   function homeHtml() {
     const history = loadHistory().slice().reverse();
     const rows = history.map((e) => `<li><strong>${esc(e.title)}</strong><span>${fmt(e.words)} words${e.wpm ? ` · ${e.wpm} wpm` : ""} · ${esc(outcomeLabel(e))} · ${esc(new Date(e.at).toLocaleDateString())}</span></li>`);
-    return `<section class="feature-card rc-card" aria-labelledby="rc-card-title">
-      <small class="rc-kicker">Practice · not scored</small>
-      <h3 id="rc-card-title">Read your own text</h3>
+    return `<section class="feature-card rcu-card" aria-labelledby="rcu-card-title">
+      <small class="rcu-kicker">Practice · not scored</small>
+      <h3 id="rcu-card-title">Read your own text</h3>
       <p>Paste an article or a page from a school book and read it here, at your own pace or with the pacer. It does not change your levels.</p>
       <button class="btn btn-primary" type="button" data-rc-act="open">Read your own text</button>
-      ${rows.length ? `<details class="rc-history"><summary>Your last ${rows.length} ${rows.length === 1 ? "read" : "reads"}</summary><ul>${rows.join("")}</ul></details>` : ""}
+      ${rows.length ? `<details class="rcu-history"><summary>Your last ${rows.length} ${rows.length === 1 ? "read" : "reads"}</summary><ul>${rows.join("")}</ul></details>` : ""}
     </section>`;
   }
 
@@ -277,11 +277,11 @@
   function paceControl() {
     const baseline = host?.state?.().baseline;
     const pace = draft.pace || defaultPace(baseline);
-    return `<div class="rc-pace" id="rc-pace" ${draft.mode === "pacer" ? "" : "hidden"}>
-      <span class="rc-pace-label" id="rc-pace-label">Pace</span>
-      <button type="button" class="btn btn-ghost rc-step" data-rc-act="slower" aria-label="10 words per minute slower">−</button>
-      <output class="rc-pace-value" id="rc-pace-value" aria-labelledby="rc-pace-label"><strong>${pace}</strong> wpm</output>
-      <button type="button" class="btn btn-ghost rc-step" data-rc-act="faster" aria-label="10 words per minute faster">+</button>
+    return `<div class="rcu-pace" id="rcu-pace" ${draft.mode === "pacer" ? "" : "hidden"}>
+      <span class="rcu-pace-label" id="rcu-pace-label">Pace</span>
+      <button type="button" class="btn btn-ghost rcu-step" data-rc-act="slower" aria-label="10 words per minute slower">−</button>
+      <output class="rcu-pace-value" id="rcu-pace-value" aria-labelledby="rcu-pace-label"><strong>${pace}</strong> wpm</output>
+      <button type="button" class="btn btn-ghost rcu-step" data-rc-act="faster" aria-label="10 words per minute faster">+</button>
       <p class="settings-note">${baseline ? `Starts at your starting speed (${baseline} wpm) × ${PACE_BOOST}.` : `Your starting speed is not measured yet, so this starts at ${DEFAULT_PACE} wpm.`} Steps of ${PACE_STEP}, from ${MIN_PACE} to ${MAX_PACE}.</p>
     </div>`;
   }
@@ -291,20 +291,20 @@
     draft.pace = draft.pace || defaultPace(host?.state?.().baseline);
     show(`<p class="feature-eyebrow">Your own text</p>
       <h3 class="rd-title">Read your own text</h3>
-      <form class="feature-card rc-form" data-rc-form="setup" novalidate>
-        <label class="field-label" for="rc-text"><strong>Paste the text</strong></label>
-        <textarea id="rc-text" class="text-input rc-text" rows="9" aria-describedby="rc-count rc-error" placeholder="Paste an article or a page from a book. ${MIN_WORDS} to ${fmt(MAX_WORDS)} words.">${esc(draft.text)}</textarea>
-        <p class="rc-count" id="rc-count" aria-live="polite"></p>
-        <label class="field-label" for="rc-title">Title (optional)</label>
-        <input id="rc-title" class="text-input" maxlength="60" autocomplete="off" placeholder="Taken from the first words if you leave it empty" value="${esc(draft.title)}" />
-        <fieldset class="rc-modes">
+      <form class="feature-card rcu-form" data-rc-form="setup" novalidate>
+        <label class="field-label" for="rcu-text"><strong>Paste the text</strong></label>
+        <textarea id="rcu-text" class="text-input rcu-text" rows="9" aria-describedby="rcu-count rcu-error" placeholder="Paste an article or a page from a book. ${MIN_WORDS} to ${fmt(MAX_WORDS)} words.">${esc(draft.text)}</textarea>
+        <p class="rcu-count" id="rcu-count" aria-live="polite"></p>
+        <label class="field-label" for="rcu-title">Title (optional)</label>
+        <input id="rcu-title" class="text-input" maxlength="60" autocomplete="off" placeholder="Taken from the first words if you leave it empty" value="${esc(draft.title)}" />
+        <fieldset class="rcu-modes">
           <legend>How do you want to read it?</legend>
-          <label class="rd-choice"><input type="radio" name="rc-mode" value="own" ${draft.mode === "own" ? "checked" : ""}> <span><strong>Own pace.</strong> You read, we time you. Press Done at the end.</span></label>
-          <label class="rd-choice"><input type="radio" name="rc-mode" value="pacer" ${draft.mode === "pacer" ? "checked" : ""}> <span><strong>Pacer.</strong> A highlight moves through the text at a speed you choose.</span></label>
+          <label class="rd-choice"><input type="radio" name="rcu-mode" value="own" ${draft.mode === "own" ? "checked" : ""}> <span><strong>Own pace.</strong> You read, we time you. Press Done at the end.</span></label>
+          <label class="rd-choice"><input type="radio" name="rcu-mode" value="pacer" ${draft.mode === "pacer" ? "checked" : ""}> <span><strong>Pacer.</strong> A highlight moves through the text at a speed you choose.</span></label>
         </fieldset>
         ${paceControl()}
         <p class="settings-note">${ai ? "Your AI model will write three questions from this text, so the text is sent to it." : "AI is off, so after reading you do a quick self-check. Turn AI on in Settings for questions."}</p>
-        <p class="rc-error" id="rc-error" role="alert"></p>
+        <p class="rcu-error" id="rcu-error" role="alert"></p>
         <button class="btn btn-primary btn-big" type="submit">Start reading</button>
         <button class="btn btn-ghost" type="button" data-rc-act="home">Back to levels</button>
       </form>`);
@@ -312,8 +312,8 @@
   }
 
   function updateCount() {
-    const box = root.querySelector("#rc-text");
-    const label = root.querySelector("#rc-count");
+    const box = root.querySelector("#rcu-text");
+    const label = root.querySelector("#rcu-count");
     if (!box || !label) return;
     const words = countWords(cleanText(box.value));
     label.textContent = words ? `${fmt(words)} ${words === 1 ? "word" : "words"} · need ${MIN_WORDS} to ${fmt(MAX_WORDS)}` : `Need ${MIN_WORDS} to ${fmt(MAX_WORDS)} words`;
@@ -321,18 +321,18 @@
   }
 
   function readDraft() {
-    draft.text = root.querySelector("#rc-text")?.value ?? draft.text;
-    draft.title = root.querySelector("#rc-title")?.value ?? draft.title;
-    draft.mode = root.querySelector('input[name="rc-mode"]:checked')?.value || draft.mode;
+    draft.text = root.querySelector("#rcu-text")?.value ?? draft.text;
+    draft.title = root.querySelector("#rcu-title")?.value ?? draft.title;
+    draft.mode = root.querySelector('input[name="rcu-mode"]:checked')?.value || draft.mode;
   }
 
   function submitSetup() {
     readDraft();
     const check = validateText(draft.text);
-    const error = root.querySelector("#rc-error");
+    const error = root.querySelector("#rcu-error");
     if (!check.ok) {
       error.textContent = check.message;
-      root.querySelector("#rc-text").focus();
+      root.querySelector("#rcu-text").focus();
       return;
     }
     error.textContent = "";
@@ -353,7 +353,7 @@
       const words = p.split(/\s+/).filter(Boolean);
       return wrap ? `<p>${words.map((w) => `<span class="rd-w" data-i="${index++}">${esc(w)}</span>`).join(" ")}</p>` : `<p>${esc(words.join(" "))}</p>`;
     }).join("");
-    return `<article class="rd-passage rc-live"><h3>${esc(session.passage.title)}</h3>${body}</article>`;
+    return `<article class="rd-passage rcu-live"><h3>${esc(session.passage.title)}</h3>${body}</article>`;
   }
 
   function startTimed() {
@@ -429,7 +429,7 @@
     stop();
     const mine = session;
     if (mine.pending && !mine.questions) {
-      show(`<p class="feature-eyebrow rc-live">Questions</p><p class="settings-note" role="status">Writing your questions…</p>`);
+      show(`<p class="feature-eyebrow rcu-live">Questions</p><p class="settings-note" role="status">Writing your questions…</p>`);
       await mine.pending;
       if (session !== mine || !alive()) return;
     }
@@ -438,7 +438,7 @@
   }
 
   function showQuiz() {
-    show(`<p class="feature-eyebrow rc-live">Questions · no looking back</p>
+    show(`<p class="feature-eyebrow rcu-live">Questions · no looking back</p>
       <form class="rd-quiz" data-rc-form="quiz">
         ${session.questions.map((q, qi) => `<fieldset class="feature-card"><legend><strong>${qi + 1}. ${esc(q.q)}</strong></legend>
           ${q.options.map((o, oi) => `<label class="rd-choice"><input type="radio" name="q${qi}" value="${oi}" required> <span>${esc(o)}</span></label>`).join("")}
@@ -450,17 +450,17 @@
   function showSelfCheck(failed) {
     const firsts = firstSentences(session.passage.paragraphs);
     const more = session.passage.paragraphs.length - firsts.length;
-    show(`<p class="feature-eyebrow rc-live">Self-check · no looking back</p>
+    show(`<p class="feature-eyebrow rcu-live">Self-check · no looking back</p>
       ${failed ? '<p class="settings-note" role="status">The AI could not write questions this time, so here is a self-check.</p>' : ""}
       <div class="feature-card">
         <h3>1. Say the main point in five words</h3>
-        <input id="rc-point" class="text-input" maxlength="80" autocomplete="off" placeholder="Say it, or type it" />
-        <h3 class="rc-gap">2. Check yourself</h3>
+        <input id="rcu-point" class="text-input" maxlength="80" autocomplete="off" placeholder="Say it, or type it" />
+        <h3 class="rcu-gap">2. Check yourself</h3>
         <button class="btn btn-ghost" type="button" data-rc-act="reveal" aria-expanded="false">Reveal the first sentence of each paragraph</button>
-        <ol class="rc-firsts" id="rc-firsts" hidden>${firsts.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
-        ${more > 0 ? `<p class="settings-note rc-more" hidden>and ${more} more ${more === 1 ? "paragraph" : "paragraphs"}.</p>` : ""}
-        <h3 class="rc-gap" id="rc-rate-h">3. How well did you follow it?</h3>
-        <div class="rc-rate" role="group" aria-labelledby="rc-rate-h">
+        <ol class="rcu-firsts" id="rcu-firsts" hidden>${firsts.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
+        ${more > 0 ? `<p class="settings-note rcu-more" hidden>and ${more} more ${more === 1 ? "paragraph" : "paragraphs"}.</p>` : ""}
+        <h3 class="rcu-gap" id="rcu-rate-h">3. How well did you follow it?</h3>
+        <div class="rcu-rate" role="group" aria-labelledby="rcu-rate-h">
           ${RATINGS.map((r) => `<button type="button" class="btn btn-ghost" data-rc-rate="${r.n}"><strong>${r.n}</strong><span>${r.label}</span></button>`).join("")}
         </div>
       </div>`);
@@ -499,7 +499,7 @@
       const ok = answers[i] === q.answer;
       return `<li class="${ok ? "ok" : "miss"}"><span>${ok ? "✓" : "✗"}</span> ${esc(q.q)}${ok ? "" : `<br><small>Answer: ${esc(q.options[q.answer])}</small>`}</li>`;
     }).join("") : "";
-    show(`<p class="feature-eyebrow rc-live">Your own text · ${esc(session.passage.title)}</p>
+    show(`<p class="feature-eyebrow rcu-live">Your own text · ${esc(session.passage.title)}</p>
       <div class="rd-stats rd-result">
         <div><strong>${wpm}</strong><span>words / min</span></div>
         <div><strong>${answers ? `${right}/${session.questions.length}` : `${rating}/5`}</strong><span>${answers ? "understood" : "you followed"}</span></div>
@@ -524,14 +524,14 @@
     if (act === "home") { stop(); session = null; return host.home(); }
     if (act === "slower" || act === "faster") {
       draft.pace = stepPace(draft.pace || defaultPace(host?.state?.().baseline), act === "slower" ? -1 : 1);
-      root.querySelector("#rc-pace-value").innerHTML = `<strong>${draft.pace}</strong> wpm`;
+      root.querySelector("#rcu-pace-value").innerHTML = `<strong>${draft.pace}</strong> wpm`;
       return;
     }
     if (act === "done" && session) { session.readMs = performance.now() - session.startedAt - session.hiddenMs; return showQuestions(); }
     if (act === "pause" && session?.paced) return setPaused(!session.paced.paused);
     if (act === "reveal") {
-      root.querySelector("#rc-firsts").hidden = false;
-      root.querySelector(".rc-more")?.removeAttribute("hidden");
+      root.querySelector("#rcu-firsts").hidden = false;
+      root.querySelector(".rcu-more")?.removeAttribute("hidden");
       target.hidden = true;
     }
   }
@@ -548,13 +548,13 @@
   }
 
   function onInput(event) {
-    if (event.target.id === "rc-text") updateCount();
+    if (event.target.id === "rcu-text") updateCount();
   }
 
   function onChange(event) {
-    if (event.target.name !== "rc-mode") return;
+    if (event.target.name !== "rcu-mode") return;
     draft.mode = event.target.value;
-    root.querySelector("#rc-pace").hidden = draft.mode !== "pacer";
+    root.querySelector("#rcu-pace").hidden = draft.mode !== "pacer";
   }
 
   function wire() {

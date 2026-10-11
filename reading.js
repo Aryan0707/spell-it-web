@@ -190,8 +190,9 @@
   //   result: { wpm, share } where share is the fraction of questions answered right (0, 1/3, 2/3 or 1).
   // Returns the pace for next time; the caller clamps it to a sensible range.
   function adaptTarget(target, result) {
-    // TODO(you): decide how the pace responds to how well the learner understood.
-    return target;
+    if (result.share >= 0.9) return Math.round(target * 1.05);        // everything understood: a little faster
+    if (result.share >= PASS_SHARE - 1e-9) return target;               // passed, but missed one: hold the pace
+    return Math.round(target * 0.92);                                   // not understood: ease off
   }
 
   // Store one finished run and return what changed. Pure: takes a state, returns a new one.

@@ -40,7 +40,11 @@
     if (!series.length) return { count: 0, best: 0, latest: null, start: baseline > 0 ? baseline : null, change: null, changePct: null };
     const best = Math.max(...series.map((p) => p.eff));
     const latest = series[series.length - 1].eff;
-    const start = baseline > 0 ? baseline : series.length > 1 ? series[0].eff : null;
+    // Effective speed is compared with effective speed: the starting speed is the raw words per minute of
+    // the read that set it, so its own understanding is counted too, or a partly understood first read
+    // would make real progress look like a loss.
+    const first = series.find((p) => p.level === 1 && p.passed && p.wpm === baseline);
+    const start = first ? first.eff : baseline > 0 ? baseline : series.length > 1 ? series[0].eff : null;
     const change = start ? latest - start : null;
     return { count: series.length, best, latest, start, change, changePct: start ? Math.round((change / start) * 100) : null };
   }
