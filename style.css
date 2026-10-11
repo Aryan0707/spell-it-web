@@ -2377,3 +2377,7 @@ body{ background: var(--bg); }
 #rd-orp-l{ text-align: right; }
 #rd-orp-c{ color: var(--accent-warm); }
 #rd-orp-r{ text-align: left; }
+
+/* AI-made reading passages card (reading-generated.js) */
+.rg-card .btn{ width: 100%; }
+.rg-status{ min-height: 1.4em; margin: 8px 0; }

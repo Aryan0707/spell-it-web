@@ -374,6 +374,7 @@
     ENRICH_BATCH,
     explainMistake,
     chat,
+    callOpenRouter,
     suggestWords,
     fold,
     DEFAULT_MODEL,

@@ -135,7 +135,10 @@
   }
 
   function passagesFor(level, sets) {
-    return level.texts === "advanced" && sets.ADVANCED_PASSAGES?.length ? sets.ADVANCED_PASSAGES : sets.PASSAGES;
+    const advanced = level.texts === "advanced" && sets.ADVANCED_PASSAGES?.length;
+    const base = advanced ? sets.ADVANCED_PASSAGES : sets.PASSAGES;
+    const extra = sets.generatedFor?.(advanced ? "advanced" : "basic") || []; // AI-made passages (reading-generated.js)
+    return extra.length ? [...base, ...extra] : base;
   }
 
   // ---------- progress ----------
@@ -237,6 +240,12 @@
   let adapter = null;
   let root = null;
   let state = emptyState();
+  // Extensions add cards to the front page: register({ id, home(api) => html, bind(root, api) }).
+  const extensions = [];
+  const extensionApi = { rerender: () => renderHome(), escapeHtml: (t) => escapeHtml(t) };
+  function register(extension) {
+    if (extension && typeof extension.home === "function" && !extensions.some((e) => e.id === extension.id)) extensions.push(extension);
+  }
   let run = null; // the read in progress: { level, passage, startedAt, ... }
 
   const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -299,9 +308,11 @@
         <ol class="rd-method-list">${METHOD.map((m) => `<li><strong>${escapeHtml(m.title)}.</strong> ${escapeHtml(m.text)}</li>`).join("")}</ol>
         <p class="settings-note">${escapeHtml(HONEST_NOTE)}</p>
       </details>
+      ${extensions.map((e) => e.home(extensionApi)).join("")}
       <ol class="rd-levels" aria-label="Levels">${levelRows}</ol>
       <p class="settings-note">Every level needs two thirds of the answers right: 2 of 3 on the basic texts, 4 of 5 on the advanced ones. Effective speed = words per minute × share right.</p>
     `);
+    for (const e of extensions) e.bind?.(root, extensionApi);
   }
 
   // ---------- lesson ----------
@@ -649,5 +660,5 @@
     for (const button of document.querySelectorAll("[data-open-reading]")) button.addEventListener("click", open);
   }
 
-  window.SpellReading = { init, open, ...api };
+  window.SpellReading = { init, open, register, ...api };
 })();
